@@ -15,11 +15,13 @@
         <a-asset-item id="emerald-glb" src="emerald.glb"></a-asset-item>
         <a-asset-item id="topaz-glb" src="topaz.glb"></a-asset-item>
         <a-asset-item id="agate-glb" src="agate.glb"></a-asset-item>
+        <a-asset-item id="gold-glb" src="gold.glb"></a-asset-item>
+        <a-asset-item id="silver-glb" src="silver.glb"></a-asset-item>
       </a-assets>
 
       <a-marker type="pattern" url="diamond.patt">
         <a-entity gltf-model="#diamond-glb" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-entity>
-        <a-text value="Diamond\nThe hardest natural substance on Earth." position="0 1.2 0" align="center" color="#FFFFFF" width="3"></a-text>
+        <a-text value="Diamond\nThe hardest natural substance on Earth." position="0 1.2 0" align="center" color="white" width="3"></a-text>
       </a-marker>
 
       <a-marker type="pattern" url="ruby.patt">
@@ -40,6 +42,17 @@
       <a-marker type="pattern" url="agate.patt">
         <a-entity gltf-model="#agate-glb" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-entity>
         <a-text value="Agate\nCharacterized by its unique colorful bands." position="0 1.2 0" align="center" color="#F1C40F" width="3"></a-text>
+      </a-marker>
+
+      <a-marker type="pattern" url="gold.patt">
+        <a-entity gltf-model="#gold-glb" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-entity>
+        <a-text value="Gold\nA highly sought-after precious metal." position="0 1.2 0" align="center" color="#FFD700" width="3"></a-text>
+     </a-marker>
+
+
+       <a-marker type="pattern" url="silver.patt">
+         <a-entity gltf-model="#silver-glb" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-entity>
+         <a-text value="Silver\nKnown for its high electrical conductivity." position="0 1.2 0" align="center" color="#C0C0C0" width="3"></a-text>
       </a-marker>
 
       <a-entity camera></a-entity>
