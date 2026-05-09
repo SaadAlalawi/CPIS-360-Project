@@ -11,9 +11,19 @@
           url: {type: 'string'}
         },
         init: function () {
+          let marker = this.el.parentEl;
+          let isVisible = false;
+
+          marker.addEventListener('markerFound', () => {
+            isVisible = true;
+          });
+
+          marker.addEventListener('markerLost', () => {
+            isVisible = false;
+          });
+
           this.el.addEventListener('click', () => {
-            let marker = this.el.closest('a-marker');
-            if (marker && marker.object3D.visible) {
+            if (isVisible) {
               window.open(this.data.url, '_blank');
             }
           });
