@@ -391,7 +391,6 @@
 </head>
 <body>
  
-<!-- ══ مشهد AR — يُبنى مرة واحدة ولا يُحذف أبداً ══ -->
 <div id="ar-wrapper">
   <a-scene id="ar-scene"
     embedded
@@ -409,7 +408,6 @@
       <a-asset-item id="silver-glb"  src="models/silver.glb"></a-asset-item>
     </a-assets>
  
-    <!-- الأحجار — data-gem-id للربط مع JS -->
     <a-marker type="pattern" url="markers/diamond.patt" data-gem-id="diamond">
       <a-entity gltf-model="#diamond-glb" scale="0.5 0.5 0.5" position="0 0.1 0"
         animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
@@ -470,7 +468,6 @@
   </a-scene>
 </div>
  
-<!-- ══ شاشة البداية ══ -->
 <div id="splash">
   <canvas id="particles-canvas"></canvas>
   <div class="splash-content">
@@ -490,7 +487,6 @@
   </div>
 </div>
  
-<!-- ══ HUD ══ -->
 <div id="hud">
   <button class="hud-btn" id="back-btn">✕</button>
   <div class="hud-pill">
@@ -500,13 +496,11 @@
   <div class="hud-pill" id="gem-pill">💎 <span id="gem-pill-name"></span></div>
 </div>
  
-<!-- ══ دليل المسح ══ -->
 <div id="scan-guide" style="display:none">
   <div class="scan-frame">💎</div>
   <p class="scan-text">وجّه الكاميرا نحو علامة الحجر</p>
 </div>
  
-<!-- ══ بطاقة المعلومات ══ -->
 <div id="info-card">
   <div class="card-handle"></div>
   <div class="gem-header">
@@ -532,13 +526,8 @@
   </div>
 </div>
  
-<!-- ══ Toasts ══ -->
 <div id="toasts"></div>
  
-<!-- ══ config.js — أضفه في .gitignore ══
-     أنشئ ملف config.js بجانب index.html وضع فيه:
-     window.GOLD_API_KEY = "مفتاحك هنا";
--->
 <script src="config.js" onerror="console.warn('config.js غير موجود، أسعار المعادن لن تعمل')"></script>
  
 <script>
@@ -735,8 +724,8 @@
  
   /* ════════════════════════════════════
      زر "ابدأ"
-     ✅ المشهد موجود مسبقاً في DOM —
-        نكتفي بإظهاره فقط
+     ✅ تم تعديل الكود ليعمل فوراً إذا كانت
+        الكاميرا والمشهد محملين مسبقاً
   ════════════════════════════════════ */
   document.getElementById('start-btn').addEventListener('click', function () {
     this.disabled = true;
@@ -752,10 +741,12 @@
     const wrapper  = document.getElementById('ar-wrapper');
     const splashEl = document.getElementById('splash');
  
+    let fallbackTimer;
+
     function onReady() {
       if (arReady) return;
       arReady = true;
-      clearTimeout(fallbackTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
  
       // إظهار المشهد وإخفاء splash
       wrapper.classList.add('active');
@@ -767,9 +758,13 @@
       toast('التجربة جاهزة — وجّه الكاميرا نحو العلامة');
     }
  
-    // ✅ استخدام حدث 'loaded' مع timeout كـ fallback
-    scene.addEventListener('loaded', onReady, { once: true });
-    const fallbackTimer = setTimeout(onReady, 9000);
+    // ✅ الكود المصحح
+    if (scene.hasLoaded) {
+      onReady();
+    } else {
+      scene.addEventListener('loaded', onReady, { once: true });
+      fallbackTimer = setTimeout(onReady, 9000); 
+    }
   });
  
   /* ════════════════════════════════════
