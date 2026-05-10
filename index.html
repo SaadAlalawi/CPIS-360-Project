@@ -1,225 +1,589 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Gems AR Project - Info Edition</title>
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
- 
-      /* ───── زر "اعرف أكثر" العائم ───── */
-      #info-btn {
-        display: none;                      /* مخفي بالأساس */
-        position: fixed;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 9999;
- 
-        padding: 14px 36px;
-        font-size: 18px;
-        font-weight: 600;
-        color: #fff;
-        background: rgba(30, 30, 30, 0.85);
-        border: 2px solid rgba(255,255,255,0.35);
-        border-radius: 50px;
-        cursor: pointer;
- 
-        /* منع أي تدخل من A-Frame */
-        pointer-events: auto;
- 
-        /* انتقال ناعم */
-        transition: opacity 0.3s, transform 0.3s;
-        opacity: 0;
-      }
- 
-      #info-btn.visible {
-        display: block;
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-        animation: pulse 2s infinite;
-      }
- 
-      @keyframes pulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.3); }
-        50%       { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
-      }
- 
-      /* ───── تسمية اسم الحجر ───── */
-      #gem-label {
-        display: none;
-        position: fixed;
-        top: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 9999;
-        padding: 8px 24px;
-        font-size: 15px;
-        color: #fff;
-        background: rgba(0,0,0,0.55);
-        border-radius: 20px;
-        letter-spacing: 0.5px;
-        pointer-events: none;
-      }
-      #gem-label.visible { display: block; }
-    </style>
-  </head>
- 
-  <body style="margin:0; overflow:hidden;">
- 
-    <!-- ── عناصر UI خارج A-Frame تماماً ── -->
-    <div id="gem-label"></div>
- 
-    <button id="info-btn" onclick="openGemUrl()">
-      🔍 اعرف أكثر
-    </button>
- 
-    <!-- ── مشهد AR ── -->
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
- 
-      <a-assets>
-        <a-asset-item id="diamond-glb" src="diamond.glb"></a-asset-item>
-        <a-asset-item id="ruby-glb"    src="ruby.glb"></a-asset-item>
-        <a-asset-item id="emerald-glb" src="emerald.glb"></a-asset-item>
-        <a-asset-item id="topaz-glb"   src="topaz.glb"></a-asset-item>
-        <a-asset-item id="agate-glb"   src="agate.glb"></a-asset-item>
-        <a-asset-item id="gold-glb"    src="gold.glb"></a-asset-item>
-        <a-asset-item id="silver-glb"  src="silver.glb"></a-asset-item>
-      </a-assets>
- 
-      <a-marker type="pattern" url="diamond.patt"
-                data-url="https://en.wikipedia.org/wiki/Diamond"
-                data-name=" Diamond">
-        <a-entity gltf-model="#diamond-glb" scale="0.5 0.5 0.5"
-                  animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
-        <a-text value="Diamond&#10;The hardest natural substance on Earth."
-                position="0 1.2 0" align="center" color="white" width="3"></a-text>
-      </a-marker>
- 
-      <a-marker type="pattern" url="ruby.patt"
-                data-url="https://en.wikipedia.org/wiki/Ruby"
-                data-name=" Ruby">
-        <a-entity gltf-model="#ruby-glb" scale="0.5 0.5 0.5"
-                  animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
-        <a-text value="Ruby&#10;A red variety of the mineral Corundum."
-                position="0 1.2 0" align="center" color="#FF1493" width="3"></a-text>
-      </a-marker>
- 
-      <a-marker type="pattern" url="emerald.patt"
-                data-url="https://en.wikipedia.org/wiki/Emerald"
-                data-name=" Emerald">
-        <a-entity gltf-model="#emerald-glb" scale="0.5 0.5 0.5"
-                  animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
-        <a-text value="Emerald&#10;Famous for its rich green color and inclusions."
-                position="0 1.2 0" align="center" color="#2ECC71" width="3"></a-text>
-      </a-marker>
- 
-      <a-marker type="pattern" url="topaz.patt"
-                data-url="https://en.wikipedia.org/wiki/Topaz"
-                data-name=" Topaz">
-        <a-entity gltf-model="#topaz-glb" scale="0.5 0.5 0.5"
-                  animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
-        <a-text value="Topaz&#10;A silicate mineral of aluminium and fluorine."
-                position="0 1.2 0" align="center" color="#3498DB" width="3"></a-text>
-      </a-marker>
- 
-      <a-marker type="pattern" url="agate.patt"
-                data-url="https://en.wikipedia.org/wiki/Agate"
-                data-name="Agate">
-        <a-entity gltf-model="#agate-glb" scale="0.1 0.1 0.1"
-                  animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
-        <a-text value="Agate&#10;Characterized by its unique colorful bands."
-                position="0 1.2 0" align="center" color="#F1C40F" width="3"></a-text>
-      </a-marker>
- 
-      <a-marker type="pattern" url="gold.patt"
-                data-url="https://en.wikipedia.org/wiki/Gold"
-                data-name=" Gold">
-        <a-entity gltf-model="#gold-glb" scale="0.05 0.05 0.05"
-                  animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
-        <a-text id="gold-text" value="Gold&#10;Loading current price..."
-                position="0 1.2 0" align="center" color="#FFD700" width="3"></a-text>
-      </a-marker>
- 
-      <a-marker type="pattern" url="silver.patt"
-                data-url="https://en.wikipedia.org/wiki/Silver"
-                data-name=" Silver">
-        <a-entity gltf-model="#silver-glb" scale="1 1 1"
-                  animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
-        <a-text value="Silver&#10;Known for its high electrical conductivity."
-                position="0 1.2 0" align="center" color="white" width="3"></a-text>
-      </a-marker>
- 
-      <a-entity camera></a-entity>
-    </a-scene>
- 
-    <script>
-      // ─── الحالة الحالية ───
-      let currentUrl  = "";
-      let currentName = "";
- 
-      const btn      = document.getElementById('info-btn');
-      const gemLabel = document.getElementById('gem-label');
- 
-      // ─── دالة الفتح — مرتبطة مباشرة بـ onclick ───
-      function openGemUrl() {
-        if (currentUrl) window.open(currentUrl, '_blank');
-      }
- 
-      // ─── إظهار / إخفاء الزر والتسمية ───
-      function showUI(url, name) {
-        currentUrl  = url;
-        currentName = name;
-        gemLabel.textContent = name;
-        gemLabel.classList.add('visible');
-        btn.classList.add('visible');
-        btn.style.display = 'block';
-      }
- 
-      function hideUI() {
-        currentUrl  = "";
-        currentName = "";
-        gemLabel.classList.remove('visible');
-        btn.classList.remove('visible');
-        // إخفاء بعد انتهاء الانتقال
-        setTimeout(() => { btn.style.display = 'none'; }, 300);
-      }
- 
-      // ─── ربط أحداث العلامات ───
-      window.addEventListener('load', function () {
- 
-        document.querySelectorAll('a-marker').forEach(function (marker) {
-          marker.addEventListener('markerFound', function () {
-            showUI(
-              marker.getAttribute('data-url'),
-              marker.getAttribute('data-name') || 'Gem'
-            );
-          });
-          marker.addEventListener('markerLost', hideUI);
-        });
- 
-        // ─── جلب سعر الذهب ───
-        fetch("https://www.goldapi.io/api/XAU/USD", {
-          method: 'GET',
-          headers: {
-            "x-access-token": "goldapi-bbe569760bec77a34f75203117c1f24c-io",
-            "Content-Type": "application/json"
-          }
-        })
-        .then(r => r.json())
-        .then(result => {
-          const el = document.querySelector('#gold-text');
-          if (el && result.price) {
-            el.setAttribute('value',
-              'Gold\nGlobal Price: $' + Number(result.price).toLocaleString() + ' / oz');
-          }
-        })
-        .catch(() => {
-          const el = document.querySelector('#gold-text');
-          if (el) el.setAttribute('value', 'Gold\nPrice unavailable');
-        });
- 
-      });
-    </script>
-  </body>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gems AR — معرض الأحجار الكريمة</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+  <style>
+    :root {
+      --gold:    #D4AF37;
+      --gold-lt: #F0D060;
+      --dark:    #0a0a0f;
+      --glass:   rgba(10,10,20,0.78);
+      --border:  rgba(212,175,55,0.25);
+      --radius:  16px;
+      --font-en: 'Cinzel', serif;
+      --font-ar: 'Tajawal', sans-serif;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; overflow:hidden; font-family: var(--font-ar); }
+
+    /* ── شاشة البداية ── */
+    #splash {
+      position:fixed; inset:0; z-index:10000;
+      background: radial-gradient(ellipse at 50% 60%, #1a1200 0%, #000 70%);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:24px; transition: opacity 0.8s ease, visibility 0.8s;
+    }
+    #splash.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+    .splash-logo {
+      font-family: var(--font-en); font-size: clamp(28px,8vw,52px);
+      color: var(--gold); letter-spacing:6px; text-transform:uppercase;
+      animation: shimmer 3s infinite;
+    }
+    @keyframes shimmer {
+      0%,100%{ text-shadow:0 0 20px rgba(212,175,55,0.3); }
+      50%    { text-shadow:0 0 40px rgba(212,175,55,0.8),0 0 80px rgba(212,175,55,0.2); }
+    }
+    .splash-sub  { font-size:15px; color:rgba(255,255,255,0.5); letter-spacing:2px; }
+    .splash-gems { display:flex; gap:20px; margin:8px 0; }
+    .gem-dot {
+      width:10px; height:10px; border-radius:50%;
+      animation: gemPop 1.8s infinite;
+    }
+    .gem-dot:nth-child(1){ background:#b9f2ff; animation-delay:0s; }
+    .gem-dot:nth-child(2){ background:#ff4d6d; animation-delay:.2s; }
+    .gem-dot:nth-child(3){ background:#52b788; animation-delay:.4s; }
+    .gem-dot:nth-child(4){ background:#48cae4; animation-delay:.6s; }
+    .gem-dot:nth-child(5){ background:#f8c146; animation-delay:.8s; }
+    .gem-dot:nth-child(6){ background:#FFD700; animation-delay:1s; }
+    .gem-dot:nth-child(7){ background:#C0C0C0; animation-delay:1.2s; }
+    @keyframes gemPop {
+      0%,80%,100%{ transform:scale(1); opacity:0.6; }
+      40%        { transform:scale(1.6); opacity:1; }
+    }
+    .splash-tip {
+      font-size:13px; color:rgba(255,255,255,0.35);
+      max-width:280px; text-align:center; line-height:1.7;
+    }
+    .splash-btn {
+      margin-top:8px; padding:14px 40px;
+      background: linear-gradient(135deg, var(--gold), #a07c1a);
+      color:#000; font-weight:700; font-size:16px; font-family:var(--font-ar);
+      border:none; border-radius:50px; cursor:pointer; letter-spacing:1px;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .splash-btn:active{ transform:scale(0.96); }
+    .splash-btn:hover { box-shadow:0 0 30px rgba(212,175,55,0.5); }
+
+    /* ── شريط علوي ── */
+    #topbar {
+      position:fixed; top:0; left:0; right:0; z-index:9000;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 20px;
+      background: linear-gradient(to bottom,rgba(0,0,0,0.85),transparent);
+      pointer-events:none;
+    }
+    .tb-title { font-family:var(--font-en); font-size:18px; color:var(--gold); letter-spacing:3px; }
+    #scan-indicator { display:flex; align-items:center; gap:8px; font-size:13px; color:rgba(255,255,255,0.55); }
+    .scan-dot {
+      width:8px; height:8px; border-radius:50%; background:#444;
+      transition: background .4s, box-shadow .4s;
+    }
+    .scan-dot.active {
+      background:#4ade80; box-shadow:0 0 10px #4ade80;
+      animation: blink 1.2s infinite;
+    }
+    @keyframes blink { 50%{ opacity:.4; } }
+
+    /* ── بطاقة معلومات الحجر ── */
+    #gem-card {
+      position:fixed; bottom:0; left:0; right:0; z-index:9000;
+      background: var(--glass);
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      border-top:1px solid var(--border);
+      border-radius:24px 24px 0 0;
+      padding:20px 24px 40px;
+      transform:translateY(110%);
+      transition: transform .45s cubic-bezier(.34,1.2,.64,1);
+    }
+    #gem-card.visible { transform:translateY(0); }
+
+    .card-handle {
+      width:40px; height:4px; border-radius:2px;
+      background:rgba(255,255,255,0.2); margin:0 auto 18px;
+    }
+    .card-header { display:flex; align-items:flex-start; gap:16px; margin-bottom:16px; }
+    .card-icon {
+      width:56px; height:56px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:28px; flex-shrink:0; border:1px solid var(--border);
+    }
+    .card-titles { flex:1; }
+    .card-name-en {
+      font-family:var(--font-en); font-size:22px; color:var(--gold);
+      letter-spacing:2px; line-height:1.2;
+    }
+    .card-name-ar { font-size:14px; color:rgba(255,255,255,0.5); margin-top:2px; }
+    .card-desc {
+      font-size:14px; color:rgba(255,255,255,0.75); line-height:1.8;
+      margin-bottom:16px; border-right:2px solid var(--border); padding-right:12px;
+    }
+    .card-stats {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px;
+    }
+    .stat-box {
+      background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px; padding:10px 8px; text-align:center;
+    }
+    .stat-label { font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:4px; }
+    .stat-value { font-size:15px; font-weight:700; color:#fff; }
+    .price-badge {
+      background: linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));
+      border:1px solid var(--border); border-radius:12px;
+      padding:12px 16px; display:flex; align-items:center;
+      justify-content:space-between; margin-bottom:18px;
+    }
+    .price-label { font-size:13px; color:rgba(255,255,255,0.5); }
+    .price-value { font-family:var(--font-en); font-size:20px; color:var(--gold-lt); font-weight:600; }
+    .price-unit  { font-size:11px; color:rgba(255,255,255,0.35); }
+    .card-actions { display:flex; gap:10px; }
+    #info-btn {
+      flex:1; padding:14px;
+      background: linear-gradient(135deg,var(--gold),#9a7015);
+      color:#000; font-weight:700; font-size:15px; font-family:var(--font-ar);
+      border:none; border-radius:14px; cursor:pointer;
+      transition: transform .15s, box-shadow .2s;
+    }
+    #info-btn:active { transform:scale(.97); }
+    #info-btn:hover  { box-shadow:0 4px 20px rgba(212,175,55,0.4); }
+    #share-btn {
+      width:52px; height:52px; border-radius:14px;
+      background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+      color:#fff; font-size:20px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition: background .2s;
+    }
+    #share-btn:active { background:rgba(255,255,255,0.15); }
+
+    /* ── دليل الاستخدام ── */
+    #guide {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      z-index:8000; text-align:center; pointer-events:none;
+      transition: opacity .5s;
+    }
+    #guide.hidden { opacity:0; }
+    .guide-frame {
+      width:180px; height:180px; margin:0 auto 20px;
+      border:2px dashed rgba(255,255,255,0.2); border-radius:20px;
+      display:flex; align-items:center; justify-content:center;
+      animation: scanFrame 2s infinite;
+    }
+    @keyframes scanFrame {
+      0%,100%{ border-color:rgba(255,255,255,0.15); }
+      50%    { border-color:rgba(212,175,55,0.5); }
+    }
+    .guide-icon { font-size:48px; opacity:.4; }
+    .guide-text { font-size:14px; color:rgba(255,255,255,0.45); line-height:1.7; }
+
+    /* ── Toast ── */
+    #toast {
+      position:fixed; top:80px; left:50%;
+      transform:translateX(-50%) translateY(-20px);
+      z-index:9500; background:rgba(20,20,20,0.92); backdrop-filter:blur(10px);
+      color:#fff; font-size:14px; padding:10px 24px; border-radius:50px;
+      border:1px solid rgba(255,255,255,0.1);
+      opacity:0; pointer-events:none;
+      transition: opacity .3s, transform .3s;
+    }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── مؤشر تحميل ── */
+    #loader {
+      position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
+      z-index:8500; background:var(--glass); backdrop-filter:blur(10px);
+      border:1px solid var(--border); border-radius:50px;
+      padding:10px 20px; display:flex; align-items:center; gap:10px;
+      font-size:13px; color:rgba(255,255,255,0.6);
+      transition: opacity .5s;
+    }
+    #loader.hidden { opacity:0; pointer-events:none; }
+    .loader-spinner {
+      width:16px; height:16px; border:2px solid rgba(212,175,55,0.3);
+      border-top-color:var(--gold); border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin { to{ transform:rotate(360deg); } }
+
+    @keyframes markerFlash {
+      0%  { box-shadow:inset 0 0 0 0 rgba(212,175,55,0.4); }
+      50% { box-shadow:inset 0 0 30px 5px rgba(212,175,55,0.15); }
+      100%{ box-shadow:inset 0 0 0 0 rgba(212,175,55,0); }
+    }
+    #gem-card.flash { animation: markerFlash .6s ease-out; }
+  </style>
+</head>
+<body>
+
+<!-- شاشة البداية -->
+<div id="splash">
+  <div class="splash-logo">GEMS AR</div>
+  <p class="splash-sub">معرض الأحجار الكريمة</p>
+  <div class="splash-gems">
+    <div class="gem-dot"></div><div class="gem-dot"></div><div class="gem-dot"></div>
+    <div class="gem-dot"></div><div class="gem-dot"></div><div class="gem-dot"></div>
+    <div class="gem-dot"></div>
+  </div>
+  <p class="splash-tip">وجّه الكاميرا نحو العلامة الخاصة بأي حجر كريم لاستعراض معلوماته ثلاثية الأبعاد</p>
+  <button class="splash-btn" onclick="startAR()">◈ ابدأ التجربة</button>
+</div>
+
+<!-- شريط علوي -->
+<div id="topbar">
+  <span class="tb-title">GEMS AR</span>
+  <div id="scan-indicator">
+    <div class="scan-dot" id="scan-dot"></div>
+    <span id="scan-text">جاهز للمسح</span>
+  </div>
+</div>
+
+<!-- دليل الاستخدام -->
+<div id="guide" style="display:none">
+  <div class="guide-frame"><div class="guide-icon">💎</div></div>
+  <p class="guide-text">وجّه الكاميرا<br>نحو علامة الحجر</p>
+</div>
+
+<!-- مؤشر تحميل -->
+<div id="loader" class="hidden">
+  <div class="loader-spinner"></div>
+  <span>جارٍ تحميل النماذج…</span>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- بطاقة معلومات الحجر -->
+<div id="gem-card">
+  <div class="card-handle"></div>
+  <div class="card-header">
+    <div class="card-icon" id="card-icon">💎</div>
+    <div class="card-titles">
+      <div class="card-name-en" id="card-name-en">—</div>
+      <div class="card-name-ar" id="card-name-ar">—</div>
+    </div>
+  </div>
+  <p class="card-desc" id="card-desc"></p>
+  <div class="card-stats" id="card-stats"></div>
+  <div class="price-badge" id="price-badge" style="display:none">
+    <div>
+      <div class="price-label" id="price-label">السعر العالمي</div>
+      <div class="price-unit"  id="price-unit">USD / أونصة</div>
+    </div>
+    <div class="price-value" id="price-value">—</div>
+  </div>
+  <div class="card-actions">
+    <button id="info-btn" onclick="openGemUrl()">🔍 اعرف أكثر على ويكيبيديا</button>
+    <button id="share-btn" onclick="shareGem()">⬆️</button>
+  </div>
+</div>
+
+<!-- مشهد AR -->
+<a-scene id="ar-scene" embedded arjs="sourceType: webcam; debugUIEnabled: false;" style="display:none">
+  <a-assets timeout="15000">
+    <a-asset-item id="diamond-glb" src="diamond.glb"></a-asset-item>
+    <a-asset-item id="ruby-glb"    src="ruby.glb"></a-asset-item>
+    <a-asset-item id="emerald-glb" src="emerald.glb"></a-asset-item>
+    <a-asset-item id="topaz-glb"   src="topaz.glb"></a-asset-item>
+    <a-asset-item id="agate-glb"   src="agate.glb"></a-asset-item>
+    <a-asset-item id="gold-glb"    src="gold.glb"></a-asset-item>
+    <a-asset-item id="silver-glb"  src="silver.glb"></a-asset-item>
+  </a-assets>
+
+  <a-marker type="pattern" url="diamond.patt" data-gem="diamond">
+    <a-entity gltf-model="#diamond-glb" scale="0.5 0.5 0.5"
+      animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
+    <a-text value="Diamond" position="0 1.2 0" align="center" color="#b9f2ff" width="3"></a-text>
+  </a-marker>
+
+  <a-marker type="pattern" url="ruby.patt" data-gem="ruby">
+    <a-entity gltf-model="#ruby-glb" scale="0.5 0.5 0.5"
+      animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
+    <a-text value="Ruby" position="0 1.2 0" align="center" color="#ff4d6d" width="3"></a-text>
+  </a-marker>
+
+  <a-marker type="pattern" url="emerald.patt" data-gem="emerald">
+    <a-entity gltf-model="#emerald-glb" scale="0.5 0.5 0.5"
+      animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
+    <a-text value="Emerald" position="0 1.2 0" align="center" color="#52b788" width="3"></a-text>
+  </a-marker>
+
+  <a-marker type="pattern" url="topaz.patt" data-gem="topaz">
+    <a-entity gltf-model="#topaz-glb" scale="0.5 0.5 0.5"
+      animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
+    <a-text value="Topaz" position="0 1.2 0" align="center" color="#48cae4" width="3"></a-text>
+  </a-marker>
+
+  <a-marker type="pattern" url="agate.patt" data-gem="agate">
+    <a-entity gltf-model="#agate-glb" scale="0.1 0.1 0.1"
+      animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
+    <a-text value="Agate" position="0 1.2 0" align="center" color="#f8c146" width="3"></a-text>
+  </a-marker>
+
+  <a-marker type="pattern" url="gold.patt" data-gem="gold">
+    <a-entity gltf-model="#gold-glb" scale="0.05 0.05 0.05"
+      animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
+    <a-text id="gold-text" value="Gold" position="0 1.2 0" align="center" color="#FFD700" width="3"></a-text>
+  </a-marker>
+
+  <a-marker type="pattern" url="silver.patt" data-gem="silver">
+    <a-entity gltf-model="#silver-glb" scale="1 1 1"
+      animation="property:rotation; to:0 360 0; loop:true; dur:4000"></a-entity>
+    <a-text id="silver-text" value="Silver" position="0 1.2 0" align="center" color="#C0C0C0" width="3"></a-text>
+  </a-marker>
+
+  <a-entity camera></a-entity>
+</a-scene>
+
+<script>
+// ═══════════════════════════════════════
+//  بيانات الأحجار الكاملة
+// ═══════════════════════════════════════
+const GEM_DATA = {
+  diamond: {
+    nameEn:"Diamond", nameAr:"الماس", icon:"💎", color:"#b9f2ff",
+    url:"https://en.wikipedia.org/wiki/Diamond",
+    desc:"أصلب مادة طبيعية على وجه الأرض، يتكون من الكربون النقي في بنية بلورية مكعبة. رمز الفخامة والخلود عبر التاريخ.",
+    stats:[
+      {label:"الصلابة (موز)", value:"10 / 10"},
+      {label:"الكثافة",       value:"3.51 g/cm³"},
+      {label:"المنشأ",        value:"أفريقيا"}
+    ]
+  },
+  ruby: {
+    nameEn:"Ruby", nameAr:"الياقوت الأحمر", icon:"🔴", color:"#ff4d6d",
+    url:"https://en.wikipedia.org/wiki/Ruby",
+    desc:"نوع من معدن الكوراندوم يحصل على لونه الأحمر العميق من أيونات الكروم. يُعدّ من أغلى الأحجار الكريمة في العالم.",
+    stats:[
+      {label:"الصلابة (موز)", value:"9 / 10"},
+      {label:"الكثافة",       value:"4.0 g/cm³"},
+      {label:"المنشأ",        value:"بورما"}
+    ]
+  },
+  emerald: {
+    nameEn:"Emerald", nameAr:"الزمرد", icon:"💚", color:"#52b788",
+    url:"https://en.wikipedia.org/wiki/Emerald",
+    desc:"حجر كريم أخضر من مجموعة البيريل، يستمد لونه من الكروم والفاناديوم. مشهور بشوائبه الطبيعية التي يسميها الخبراء 'الحديقة'.",
+    stats:[
+      {label:"الصلابة (موز)", value:"7.5 – 8"},
+      {label:"الكثافة",       value:"2.76 g/cm³"},
+      {label:"المنشأ",        value:"كولومبيا"}
+    ]
+  },
+  topaz: {
+    nameEn:"Topaz", nameAr:"التوباز", icon:"🔵", color:"#48cae4",
+    url:"https://en.wikipedia.org/wiki/Topaz",
+    desc:"معدن سيليكات الألومنيوم والفلور. يأتي بألوان متعددة أشهرها الأزرق، والأصفر، والبرتقالي النادر المعروف بـ'Imperial Topaz'.",
+    stats:[
+      {label:"الصلابة (موز)", value:"8 / 10"},
+      {label:"الكثافة",       value:"3.5 g/cm³"},
+      {label:"المنشأ",        value:"البرازيل"}
+    ]
+  },
+  agate: {
+    nameEn:"Agate", nameAr:"العقيق", icon:"🟡", color:"#f8c146",
+    url:"https://en.wikipedia.org/wiki/Agate",
+    desc:"نوع من الكوارتز الدقيق الحبيبات يتميز بنطاقاته اللونية الرائعة. استُخدم في الأختام والحلي منذ آلاف السنين.",
+    stats:[
+      {label:"الصلابة (موز)", value:"6.5 – 7"},
+      {label:"الكثافة",       value:"2.6 g/cm³"},
+      {label:"المنشأ",        value:"عالمي"}
+    ]
+  },
+  gold: {
+    nameEn:"Gold", nameAr:"الذهب", icon:"🥇", color:"#FFD700",
+    url:"https://en.wikipedia.org/wiki/Gold",
+    desc:"معدن ثمين عُرف منذ فجر الحضارة. يتميز بعدم تفاعله مع معظم المواد الكيميائية ولمعانه الخالد. عملة الاحتياط العالمية.",
+    stats:[
+      {label:"النقاء الأعلى", value:"24 قيراط"},
+      {label:"الكثافة",       value:"19.3 g/cm³"},
+      {label:"الرقم الذري",   value:"79"}
+    ],
+    hasPrice:true, priceLabel:"السعر العالمي", priceUnit:"USD / أونصة"
+  },
+  silver: {
+    nameEn:"Silver", nameAr:"الفضة", icon:"🥈", color:"#C0C0C0",
+    url:"https://en.wikipedia.org/wiki/Silver",
+    desc:"أعلى معدن في توصيل الكهرباء والحرارة. يُستخدم في المجوهرات والإلكترونيات والطب بسبب خصائصه المضادة للبكتيريا.",
+    stats:[
+      {label:"النقاء الأعلى", value:"999 ‰"},
+      {label:"الكثافة",       value:"10.5 g/cm³"},
+      {label:"الرقم الذري",   value:"47"}
+    ],
+    hasPrice:true, priceLabel:"السعر العالمي", priceUnit:"USD / أونصة"
+  }
+};
+
+// ═══════════════════════════════════════
+//  الحالة
+// ═══════════════════════════════════════
+let currentGem  = null;
+let goldPrice   = null;
+let silverPrice = null;
+let arStarted   = false;
+
+// ═══════════════════════════════════════
+//  بدء AR
+// ═══════════════════════════════════════
+function startAR() {
+  document.getElementById('splash').classList.add('hidden');
+  const scene = document.getElementById('ar-scene');
+  scene.style.display = 'block';
+  document.getElementById('guide').style.display = 'block';
+  document.getElementById('loader').classList.remove('hidden');
+
+  if (!arStarted) {
+    arStarted = true;
+    initMarkers();
+    fetchPrices();
+
+    scene.addEventListener('loaded', () => {
+      setTimeout(() => document.getElementById('loader').classList.add('hidden'), 800);
+    });
+    // fallback إذا لم يُطلق loaded
+    setTimeout(() => document.getElementById('loader').classList.add('hidden'), 8000);
+  }
+}
+
+// ═══════════════════════════════════════
+//  تهيئة العلامات
+// ═══════════════════════════════════════
+function initMarkers() {
+  document.querySelectorAll('a-marker').forEach(marker => {
+    marker.addEventListener('markerFound', () => onGemFound(marker.getAttribute('data-gem')));
+    marker.addEventListener('markerLost',  () => onGemLost());
+  });
+}
+
+// ═══════════════════════════════════════
+//  اكتشاف حجر
+// ═══════════════════════════════════════
+function onGemFound(gemKey) {
+  const gem = GEM_DATA[gemKey];
+  if (!gem) return;
+  currentGem = gemKey;
+
+  // شريط علوي
+  document.getElementById('scan-dot').classList.add('active');
+  document.getElementById('scan-text').textContent = gem.nameAr;
+  document.getElementById('guide').style.display = 'none';
+
+  // ملء البطاقة
+  document.getElementById('card-icon').textContent    = gem.icon;
+  document.getElementById('card-icon').style.background = gem.color + '22';
+  document.getElementById('card-icon').style.border   = '1px solid ' + gem.color + '55';
+  document.getElementById('card-name-en').textContent = gem.nameEn;
+  document.getElementById('card-name-ar').textContent = gem.nameAr;
+  document.getElementById('card-desc').textContent    = gem.desc;
+
+  // إحصاءات
+  document.getElementById('card-stats').innerHTML = gem.stats.map(s =>
+    '<div class="stat-box"><div class="stat-label">' + s.label +
+    '</div><div class="stat-value">' + s.value + '</div></div>'
+  ).join('');
+
+  // سعر
+  const pb = document.getElementById('price-badge');
+  if (gem.hasPrice) {
+    pb.style.display = 'flex';
+    document.getElementById('price-label').textContent = gem.priceLabel;
+    document.getElementById('price-unit').textContent  = gem.priceUnit;
+    const p = gemKey === 'gold' ? goldPrice : silverPrice;
+    document.getElementById('price-value').textContent =
+      p ? '$' + Number(p).toLocaleString('en-US',{maximumFractionDigits:2}) : 'جارٍ التحميل…';
+  } else {
+    pb.style.display = 'none';
+  }
+
+  // إظهار البطاقة
+  const card = document.getElementById('gem-card');
+  card.classList.remove('flash');
+  void card.offsetWidth;
+  card.classList.add('visible','flash');
+
+  showToast('✦ تم اكتشاف ' + gem.nameAr);
+}
+
+// ═══════════════════════════════════════
+//  فقدان الحجر
+// ═══════════════════════════════════════
+function onGemLost() {
+  currentGem = null;
+  document.getElementById('scan-dot').classList.remove('active');
+  document.getElementById('scan-text').textContent = 'جاهز للمسح';
+  document.getElementById('gem-card').classList.remove('visible');
+  document.getElementById('guide').style.display = 'block';
+}
+
+// ═══════════════════════════════════════
+//  فتح ويكيبيديا
+// ═══════════════════════════════════════
+function openGemUrl() {
+  if (currentGem) window.open(GEM_DATA[currentGem].url, '_blank');
+}
+
+// ═══════════════════════════════════════
+//  مشاركة
+// ═══════════════════════════════════════
+function shareGem() {
+  if (!currentGem) return;
+  const gem = GEM_DATA[currentGem];
+  const text = '✦ ' + gem.nameAr + ' (' + gem.nameEn + ')\n' + gem.desc + '\n\n' + gem.url;
+  if (navigator.share) {
+    navigator.share({title:'Gems AR — ' + gem.nameEn, text, url: gem.url}).catch(()=>{});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('✓ تم نسخ المعلومات'));
+  }
+}
+
+// ═══════════════════════════════════════
+//  جلب الأسعار (ذهب + فضة)
+// ═══════════════════════════════════════
+async function fetchPrices() {
+  const hdrs = {
+    "x-access-token":"goldapi-bbe569760bec77a34f75203117c1f24c-io",
+    "Content-Type":"application/json"
+  };
+  // ذهب
+  try {
+    const r = await fetch("https://www.goldapi.io/api/XAU/USD", {headers:hdrs});
+    const d = await r.json();
+    if (d.price) {
+      goldPrice = d.price;
+      const el = document.querySelector('#gold-text');
+      if (el) el.setAttribute('value',
+        'Gold\n$' + Number(d.price).toLocaleString('en-US',{maximumFractionDigits:0}) + '/oz');
+    }
+  } catch(e) { console.warn('Gold price N/A'); }
+  // فضة
+  try {
+    const r = await fetch("https://www.goldapi.io/api/XAG/USD", {headers:hdrs});
+    const d = await r.json();
+    if (d.price) {
+      silverPrice = d.price;
+      const el = document.querySelector('#silver-text');
+      if (el) el.setAttribute('value',
+        'Silver\n$' + Number(d.price).toFixed(2) + '/oz');
+    }
+  } catch(e) { console.warn('Silver price N/A'); }
+}
+
+// ═══════════════════════════════════════
+//  Toast
+// ═══════════════════════════════════════
+let _toastT;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
 </html>
