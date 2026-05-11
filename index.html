@@ -2,797 +2,869 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>تجربة الأحجار الكريمة بالواقع المعزز</title>
- 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Gemstones AR — معرض الأحجار الكريمة</title>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
- 
-  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
- 
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Model Viewer -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
- 
-    body {
-      font-family: 'Tajawal', sans-serif;
-      background: #0a0a12;
-      color: #fff;
-      overflow: hidden;
-      overscroll-behavior: contain;
-      position: fixed;
+    /* ══════════════════════════════════════
+       DESIGN TOKENS
+    ══════════════════════════════════════ */
+    :root {
+      --gold:       #D4AF37;
+      --gold-light: #F5D76E;
+      --gold-dim:   rgba(212,175,55,0.18);
+      --glass-bg:   rgba(8, 8, 18, 0.72);
+      --glass-border: rgba(212,175,55,0.22);
+      --surface:    rgba(14, 14, 28, 0.85);
+      --text-main:  #f0ece0;
+      --text-muted: rgba(240,236,224,0.5);
+      --radius-lg:  20px;
+      --radius-md:  14px;
+      --radius-sm:  10px;
+      --font-en:    'Cinzel', serif;
+      --font-ar:    'Tajawal', sans-serif;
+      --transition: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* ══════════════════════════════════════
+       RESET & BASE
+    ══════════════════════════════════════ */
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
+    html, body {
       width: 100%; height: 100%;
+      overflow: hidden;
+      background: #060610;
+      color: var(--text-main);
+      font-family: var(--font-ar);
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
- 
+
     /* ══════════════════════════════════════
-       ✅ المشهد مخفي بـ display:none مثل
-          الكود الشغّال — يُفعَّل مرة واحدة
-          ولا يُحذف أو يُخفى بعدها أبداً
+       BACKGROUND GRADIENT
     ══════════════════════════════════════ */
-    #ar-scene { display: none; }
- 
-    /* ══ شاشة البداية — فوق كل شيء ══ */
-    #splash {
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 70%);
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 20%, rgba(212,175,55,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 60% at 80% 80%, rgba(100,60,200,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* ══════════════════════════════════════
+       APP SHELL
+    ══════════════════════════════════════ */
+    #app {
+      position: fixed; inset: 0; z-index: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;   /* أعلى z-index في الصفحة */
-      transition: opacity 0.8s, visibility 0.8s;
     }
-    #splash.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
- 
-    #particles-canvas {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-    }
- 
-    .splash-content {
-      position: relative;
-      z-index: 2;
-      text-align: center;
-      padding: 24px;
-    }
- 
-    .logo-icon {
-      font-size: 4rem;
-      display: block;
-      margin-bottom: 16px;
-      filter: drop-shadow(0 0 20px #ffd700);
-      animation: float 3s ease-in-out infinite;
-    }
-    @keyframes float {
-      0%,100% { transform: translateY(0); }
-      50%      { transform: translateY(-10px); }
-    }
- 
-    h1 {
-      font-family: 'Cinzel', serif;
-      font-size: clamp(1.6rem, 6vw, 2.4rem);
-      color: #ffd700;
-      letter-spacing: 3px;
-      margin-bottom: 8px;
-    }
-    .subtitle { color: #aaa; margin-bottom: 28px; font-size: 0.95rem; }
- 
-    .guide-steps {
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      margin-bottom: 32px;
-    }
-    .step { text-align: center; }
-    .step-icon {
-      font-size: 1.8rem;
-      display: block;
-      margin-bottom: 6px;
-      animation: pulse 2s infinite;
-    }
-    .step:nth-child(2) .step-icon { animation-delay: .3s; }
-    .step:nth-child(3) .step-icon { animation-delay: .6s; }
-    @keyframes pulse {
-      0%,100% { transform: scale(1); }
-      50%      { transform: scale(1.2); }
-    }
-    .step-text { font-size: 0.72rem; color: #888; }
- 
-    .start-btn {
-      background: linear-gradient(135deg, #ffd700, #b8860b);
-      border: none;
-      color: #0a0a12;
-      font-family: 'Cinzel', serif;
-      font-weight: 700;
-      font-size: 1.2rem;
-      padding: 15px 40px;
-      border-radius: 50px;
-      cursor: pointer;
-      box-shadow: 0 0 30px rgba(255,215,0,0.35);
-      letter-spacing: 2px;
-      transition: transform .2s;
-    }
-    .start-btn:active   { transform: scale(0.95); }
-    .start-btn:disabled { opacity: 0.6; cursor: wait; }
- 
-    .loader-wrap {
-      margin-top: 20px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      color: #aaa;
-      font-size: 0.85rem;
-      opacity: 0;
-      transition: opacity .3s;
-    }
-    .loader-wrap.active { opacity: 1; }
-    .loader-diamond {
-      width: 24px; height: 24px;
-      border: 2px solid #ffd700;
-      transform: rotate(45deg);
-      animation: spin 1.2s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(405deg); } }
- 
-    /* ══ HUD ══ */
-    #hud {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 500;
-      display: none;          /* مخفي حتى تبدأ التجربة */
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 18px;
-      pointer-events: none;
-    }
-    #hud.active {
-      display: flex;
-      pointer-events: auto;
-    }
- 
-    .hud-pill {
-      background: rgba(10,10,20,0.72);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,215,0,0.25);
-      border-radius: 50px;
-      padding: 8px 16px;
-      font-size: 0.82rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #ddd;
-    }
-    .hud-btn {
-      width: 40px; height: 40px;
-      background: rgba(10,10,20,0.72);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,215,0,0.25);
-      border-radius: 50%;
-      color: #fff;
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
- 
-    .status-dot {
-      width: 9px; height: 9px;
-      border-radius: 50%;
-      background: #555;
+
+    /* ══════════════════════════════════════
+       TOP BAR
+    ══════════════════════════════════════ */
+    #topbar {
       flex-shrink: 0;
-      transition: background .4s, box-shadow .4s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px;
+      background: linear-gradient(to bottom, rgba(6,6,16,0.95), transparent);
+      position: relative; z-index: 10;
     }
-    .status-dot.on {
-      background: #50C878;
-      box-shadow: 0 0 8px #50C878;
-      animation: blink 1.4s infinite;
+
+    .tb-logo {
+      font-family: var(--font-en);
+      font-size: 1.1rem;
+      letter-spacing: 4px;
+      color: var(--gold);
+      text-transform: uppercase;
+      animation: logoGlow 4s ease-in-out infinite;
     }
-    @keyframes blink { 50% { opacity: .35; } }
- 
-    #gem-pill {
-      opacity: 0;
-      transition: opacity .3s;
-      font-family: 'Cinzel', serif;
+    @keyframes logoGlow {
+      0%,100% { text-shadow: 0 0 12px rgba(212,175,55,0.3); }
+      50%      { text-shadow: 0 0 28px rgba(212,175,55,0.7); }
+    }
+
+    .tb-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-muted);
       letter-spacing: 1px;
     }
-    #gem-pill.on { opacity: 1; }
- 
-    /* ══ دليل المسح ══ */
-    #scan-guide {
-      position: fixed;
+
+    /* AR button styled via slot */
+    #ar-trigger-wrap {
+      position: relative;
+    }
+    .ar-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 16px;
+      background: var(--gold-dim);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      font-family: var(--font-ar);
+      font-size: 0.82rem;
+      color: var(--gold-light);
+      cursor: pointer;
+      transition: background var(--transition), box-shadow var(--transition);
+      white-space: nowrap;
+    }
+    .ar-pill:hover  { background: rgba(212,175,55,0.28); }
+    .ar-pill:active { transform: scale(0.95); }
+    .ar-pill svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ══════════════════════════════════════
+       MODEL VIEWER — main stage
+    ══════════════════════════════════════ */
+    #viewer-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      background-color: transparent;
+      --poster-color: transparent;
+    }
+
+    /* Hide default AR button — we use our own */
+    model-viewer::part(default-ar-button) { display: none; }
+
+    /* Loading overlay inside viewer */
+    .viewer-loader {
+      position: absolute;
       inset: 0;
-      display: none;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 400;
-      pointer-events: none;
+      gap: 14px;
+      background: rgba(6,6,16,0.6);
+      backdrop-filter: blur(6px);
+      z-index: 5;
+      transition: opacity 0.4s, visibility 0.4s;
     }
- 
-    .scan-frame {
-      width: 200px; height: 200px;
-      border: 2px dashed rgba(255,215,0,0.35);
-      border-radius: 20px;
+    .viewer-loader.hidden { opacity: 0; visibility: hidden; }
+
+    .loader-ring {
+      width: 52px; height: 52px;
+      border: 3px solid rgba(212,175,55,0.15);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* Gem name floating label */
+    #gem-float-label {
+      position: absolute;
+      top: 16px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    .float-name-en {
+      font-family: var(--font-en);
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      letter-spacing: 4px;
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(212,175,55,0.5);
+    }
+    .float-name-ar {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* Interaction hint */
+    #hint {
+      position: absolute;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 6;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+      animation: fadeHint 4s ease 1.5s forwards;
+      opacity: 0;
+    }
+    @keyframes fadeHint {
+      0%   { opacity: 0; }
+      20%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .hint-icon { font-size: 1rem; }
+
+    /* ══════════════════════════════════════
+       INFO CARD (slides up from bottom)
+    ══════════════════════════════════════ */
+    #info-panel {
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Toggle tab */
+    #info-toggle {
+      position: absolute;
+      top: -36px; left: 50%;
+      transform: translateX(-50%);
+      width: 80px; height: 28px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 3.5rem;
-      animation: framePulse 2.2s ease-in-out infinite;
-      margin-bottom: 16px;
+      cursor: pointer;
+      z-index: 2;
+      backdrop-filter: blur(12px);
     }
-    @keyframes framePulse {
-      0%,100% { border-color: rgba(255,215,0,0.2); }
-      50%      { border-color: rgba(255,215,0,0.6); }
+    .toggle-arrow {
+      width: 28px; height: 3px;
+      background: rgba(212,175,55,0.45);
+      border-radius: 2px;
+      position: relative;
+      transition: transform 0.3s;
     }
-    .scan-text { font-size: 0.85rem; color: rgba(255,255,255,0.45); }
- 
-    /* ══ بطاقة المعلومات ══ */
+    .toggle-arrow::before, .toggle-arrow::after {
+      content: '';
+      position: absolute;
+      width: 14px; height: 3px;
+      background: rgba(212,175,55,0.45);
+      border-radius: 2px;
+      top: -5px;
+    }
+    .toggle-arrow::before { left: 1px;  transform: rotate(40deg); transform-origin: right; }
+    .toggle-arrow::after  { right: 1px; transform: rotate(-40deg); transform-origin: left; }
+    #info-panel.collapsed .toggle-arrow::before { top: 5px; transform: rotate(-40deg); transform-origin: right; }
+    #info-panel.collapsed .toggle-arrow::after  { top: 5px; transform: rotate(40deg);  transform-origin: left; }
+
+    /* Card body */
     #info-card {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 500;
-      background: rgba(12,12,22,0.85);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border-top: 1px solid rgba(255,215,0,0.25);
-      border-radius: 24px 24px 0 0;
-      padding: 18px 20px 36px;
-      transform: translateY(110%);
-      transition: transform .42s cubic-bezier(.22,1,.36,1), border-top-color .3s;
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border-top: 1px solid var(--glass-border);
+      padding: 16px 20px 20px;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      max-height: 68vh;
+      max-height: 40vh;
       overflow-y: auto;
+      transition: max-height var(--transition), padding var(--transition);
     }
-    #info-card.visible { transform: translateY(0); }
- 
-    .card-handle {
-      width: 38px; height: 4px;
-      background: rgba(255,215,0,0.5);
-      border-radius: 2px;
-      align-self: center;
+    #info-panel.collapsed #info-card {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      overflow: hidden;
     }
- 
-    .gem-header { display: flex; gap: 14px; align-items: center; }
-    .gem-icon-wrap {
-      width: 52px; height: 52px;
-      border-radius: 50%;
+
+    /* Card header */
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .gem-emoji-wrap {
+      width: 50px; height: 50px;
+      border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.9rem;
+      font-size: 1.8rem;
       flex-shrink: 0;
-      transition: background .3s, box-shadow .3s;
+      transition: background 0.3s, box-shadow 0.3s;
     }
-    .gem-names { flex: 1; }
-    .name-ar { font-size: 1.55rem; font-weight: 700; line-height: 1.2; }
-    .name-en {
-      font-family: 'Cinzel', serif;
-      font-size: 0.9rem;
-      color: #ffd700;
+    .card-titles { flex: 1; min-width: 0; }
+    .card-name-en {
+      font-family: var(--font-en);
+      font-size: 1.15rem;
+      color: var(--gold);
       letter-spacing: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
- 
-    .gem-desc {
-      font-size: 0.88rem;
-      color: #ccc;
-      line-height: 1.65;
-      border-right: 2px solid rgba(255,215,0,0.25);
-      padding-right: 10px;
+    .card-name-ar {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 2px;
     }
- 
-    .stats-row { display: flex; gap: 8px; }
+
+    /* Description */
+    .card-desc {
+      font-size: 0.84rem;
+      color: rgba(240,236,224,0.72);
+      line-height: 1.75;
+      border-right: 2px solid var(--glass-border);
+      padding-right: 12px;
+    }
+
+    /* Stats */
+    .card-stats {
+      display: flex;
+      gap: 8px;
+    }
     .stat-box {
       flex: 1;
-      background: rgba(255,255,255,0.07);
-      border-radius: 12px;
-      padding: 10px 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius-sm);
+      padding: 9px 6px;
       text-align: center;
     }
-    .stat-lbl { font-size: 0.62rem; color: #888; margin-bottom: 4px; }
-    .stat-val  { font-size: 1rem; font-weight: 700; }
- 
-    .price-row {
-      background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.04));
-      border: 1px solid rgba(255,215,0,0.3);
-      border-radius: 14px;
-      padding: 13px 16px;
+    .stat-lbl { font-size: 0.6rem;  color: var(--text-muted); margin-bottom: 4px; }
+    .stat-val { font-size: 0.92rem; font-weight: 700; }
+
+    /* ══════════════════════════════════════
+       BOTTOM GEM MENU
+    ══════════════════════════════════════ */
+    #gem-menu {
+      flex-shrink: 0;
+      padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, rgba(6,6,16,0.98), rgba(6,6,16,0.7));
+      border-top: 1px solid rgba(255,255,255,0.05);
+      position: relative; z-index: 10;
+    }
+
+    .menu-scroll {
       display: flex;
-      justify-content: space-between;
+      gap: 10px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .menu-scroll::-webkit-scrollbar { display: none; }
+
+    .gem-chip {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
       align-items: center;
-    }
-    .price-lbl { font-size: 0.85rem; color: #bbb; }
-    .price-val { font-family: 'Cinzel', serif; font-size: 1.25rem; color: #ffd700; }
- 
-    .btn-row { display: flex; gap: 10px; }
-    .card-btn {
-      flex: 1;
-      padding: 13px 10px;
-      border-radius: 50px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-      font-family: 'Tajawal', sans-serif;
-      font-size: 0.9rem;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
       gap: 6px;
-      transition: background .18s;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.04);
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition),
+                  transform var(--transition), box-shadow var(--transition);
+      min-width: 68px;
+      position: relative;
     }
-    .card-btn:active { background: rgba(255,215,0,0.25); }
- 
-    /* ══ Toast ══ */
-    #toasts {
+    .gem-chip:active { transform: scale(0.93); }
+
+    .gem-chip.active {
+      border-color: var(--glass-border);
+      background: var(--gold-dim);
+      box-shadow: 0 0 16px rgba(212,175,55,0.15);
+    }
+
+    .chip-emoji { font-size: 1.6rem; line-height: 1; }
+
+    .chip-name-en {
+      font-family: var(--font-en);
+      font-size: 0.6rem;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-align: center;
+      transition: color var(--transition);
+    }
+    .gem-chip.active .chip-name-en { color: var(--gold-light); }
+
+    /* Active dot indicator */
+    .chip-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--gold);
+      opacity: 0;
+      transition: opacity 0.2s;
+      position: absolute;
+      bottom: 5px;
+    }
+    .gem-chip.active .chip-dot { opacity: 1; }
+
+    /* Color accent line on active chip */
+    .gem-chip.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 20%; right: 20%;
+      height: 2px;
+      border-radius: 0 0 2px 2px;
+      background: var(--chip-color, var(--gold));
+    }
+
+    /* ══════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════ */
+    #toast-wrap {
       position: fixed;
-      top: 72px; left: 50%;
+      top: 80px; left: 50%;
       transform: translateX(-50%);
       z-index: 9000;
+      pointer-events: none;
       display: flex;
       flex-direction: column;
       gap: 8px;
       align-items: center;
-      pointer-events: none;
     }
     .toast {
-      background: rgba(10,10,20,0.9);
+      background: rgba(8,8,20,0.92);
+      border: 1px solid var(--glass-border);
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,215,0,0.25);
       border-radius: 50px;
-      padding: 9px 20px;
-      font-size: 0.88rem;
+      padding: 8px 20px;
+      font-size: 0.84rem;
       white-space: nowrap;
       animation: toastIn .3s ease, toastOut .4s 2.2s forwards;
     }
-    .toast.err { border-color: rgba(224,17,95,0.6); }
-    @keyframes toastIn  { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes toastOut { to   { opacity:0; transform:translateY(-8px); } }
+    @keyframes toastIn  { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { to   { opacity:0; transform:translateY(-6px); } }
+
+    /* ══════════════════════════════════════
+       AR NOT SUPPORTED BADGE
+    ══════════════════════════════════════ */
+    #no-ar-note {
+      display: none;
+      position: absolute;
+      bottom: 12px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 7;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: rgba(8,8,20,0.7);
+      padding: 6px 14px;
+      border-radius: 50px;
+      border: 1px solid rgba(255,255,255,0.07);
+      white-space: nowrap;
+    }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE — larger screens
+    ══════════════════════════════════════ */
+    @media (min-width: 640px) {
+      #app { flex-direction: row; flex-wrap: wrap; }
+      #topbar { width: 100%; }
+      #viewer-wrap { flex: 1; order: 2; }
+      #info-panel {
+        width: 320px;
+        order: 3;
+        flex-shrink: 0;
+      }
+      #info-card { max-height: 100%; }
+      #info-toggle { display: none; }
+      #gem-menu {
+        width: 100%;
+        order: 4;
+      }
+    }
   </style>
 </head>
 <body>
- 
-<!-- ══════════════════════════════════════
-     ✅ a-scene بـ display:none مثل الكود
-        الشغّال — يُفعَّل مرة واحدة فقط
-        عند startAR() ولا يُلمس بعدها
-══════════════════════════════════════ -->
-<a-scene id="ar-scene"
-  embedded
-  vr-mode-ui="enabled: false"
-  renderer="antialias: false; precision: mediump; colorManagement: true;"
-  arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;">
- 
-  <a-assets timeout="15000">
-    <a-asset-item id="diamond-glb" src="models/diamond.glb"></a-asset-item>
-    <a-asset-item id="ruby-glb"    src="models/ruby.glb"></a-asset-item>
-    <a-asset-item id="emerald-glb" src="models/emerald.glb"></a-asset-item>
-    <a-asset-item id="topaz-glb"   src="models/topaz.glb"></a-asset-item>
-    <a-asset-item id="agate-glb"   src="models/agate.glb"></a-asset-item>
-    <a-asset-item id="gold-glb"    src="models/gold.glb"></a-asset-item>
-    <a-asset-item id="silver-glb"  src="models/silver.glb"></a-asset-item>
-  </a-assets>
- 
-  <a-marker type="pattern" url="markers/diamond.patt" data-gem-id="diamond">
-    <a-entity gltf-model="#diamond-glb" scale="0.5 0.5 0.5" position="0 0.1 0"
-      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-    <a-ring radius-inner="0.5" radius-outer="0.56" color="#B9F2FF" opacity="0.5"
-      rotation="-90 0 0" visible="false" id="ring-diamond"></a-ring>
-  </a-marker>
- 
-  <a-marker type="pattern" url="markers/ruby.patt" data-gem-id="ruby">
-    <a-entity gltf-model="#ruby-glb" scale="0.6 0.6 0.6" position="0 0.1 0"
-      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-    <a-ring radius-inner="0.5" radius-outer="0.56" color="#E0115F" opacity="0.5"
-      rotation="-90 0 0" visible="false" id="ring-ruby"></a-ring>
-  </a-marker>
- 
-  <a-marker type="pattern" url="markers/emerald.patt" data-gem-id="emerald">
-    <a-entity gltf-model="#emerald-glb" scale="0.5 0.5 0.5" position="0 0.1 0"
-      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-    <a-ring radius-inner="0.5" radius-outer="0.56" color="#50C878" opacity="0.5"
-      rotation="-90 0 0" visible="false" id="ring-emerald"></a-ring>
-  </a-marker>
- 
-  <a-marker type="pattern" url="markers/topaz.patt" data-gem-id="topaz">
-    <a-entity gltf-model="#topaz-glb" scale="0.45 0.45 0.45" position="0 0.1 0"
-      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-    <a-ring radius-inner="0.5" radius-outer="0.56" color="#FFC87C" opacity="0.5"
-      rotation="-90 0 0" visible="false" id="ring-topaz"></a-ring>
-  </a-marker>
- 
-  <a-marker type="pattern" url="markers/agate.patt" data-gem-id="agate">
-    <a-entity gltf-model="#agate-glb" scale="0.6 0.6 0.6" position="0 0.1 0"
-      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-    <a-ring radius-inner="0.5" radius-outer="0.56" color="#D3A57C" opacity="0.5"
-      rotation="-90 0 0" visible="false" id="ring-agate"></a-ring>
-  </a-marker>
- 
-  <a-marker type="pattern" url="markers/gold.patt" data-gem-id="gold">
-    <a-entity gltf-model="#gold-glb" scale="0.7 0.7 0.7" position="0 0.1 0"
-      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-    <a-ring radius-inner="0.5" radius-outer="0.56" color="#FFD700" opacity="0.5"
-      rotation="-90 0 0" visible="false" id="ring-gold"></a-ring>
-  </a-marker>
- 
-  <a-marker type="pattern" url="markers/silver.patt" data-gem-id="silver">
-    <a-entity gltf-model="#silver-glb" scale="0.65 0.65 0.65" position="0 0.1 0"
-      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-    <a-ring radius-inner="0.5" radius-outer="0.56" color="#C0C0C0" opacity="0.5"
-      rotation="-90 0 0" visible="false" id="ring-silver"></a-ring>
-  </a-marker>
- 
-  <a-entity camera></a-entity>
-</a-scene>
- 
-<!-- ══ شاشة البداية ══ -->
-<div id="splash">
-  <canvas id="particles-canvas"></canvas>
-  <div class="splash-content">
-    <span class="logo-icon">💎</span>
-    <h1>GEMSTONES AR</h1>
-    <p class="subtitle">اكتشف جمال الأحجار الكريمة في الواقع المعزز</p>
-    <div class="guide-steps">
-      <div class="step"><span class="step-icon">📷</span><div class="step-text">وجّه الكاميرا</div></div>
-      <div class="step"><span class="step-icon">🖐️</span><div class="step-text">أظهر العلامة</div></div>
-      <div class="step"><span class="step-icon">💎</span><div class="step-text">تمتع بالجوهرة</div></div>
+
+<div id="app">
+
+  <!-- ══ TOP BAR ══ -->
+  <div id="topbar">
+    <div>
+      <div class="tb-logo">Gems AR</div>
+      <div class="tb-subtitle">معرض الأحجار الكريمة</div>
     </div>
-    <button class="start-btn" id="start-btn">ابدأ التجربة</button>
-    <div class="loader-wrap" id="loader-wrap">
-      <div class="loader-diamond"></div>
-      <span>جارٍ تشغيل الكاميرا…</span>
+
+    <div id="ar-trigger-wrap">
+      <!-- زر AR مخصص يستدعي model-viewer's AR -->
+      <button class="ar-pill" id="ar-btn" onclick="enterAR()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        وضع AR
+      </button>
     </div>
   </div>
-</div>
- 
-<!-- ══ HUD ══ -->
-<div id="hud">
-  <button class="hud-btn" id="back-btn">✕</button>
-  <div class="hud-pill">
-    <span class="status-dot" id="cam-dot"></span>
-    <span>الكاميرا</span>
+
+  <!-- ══ MODEL VIEWER STAGE ══ -->
+  <div id="viewer-wrap">
+
+    <model-viewer
+      id="mv"
+      src="models/diamond.glb"
+      alt="3D gem model"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      ar-scale="auto"
+      camera-controls
+      auto-rotate
+      auto-rotate-delay="500"
+      rotation-per-second="30deg"
+      shadow-intensity="1.2"
+      shadow-softness="0.8"
+      exposure="1.1"
+      environment-image="neutral"
+      interaction-prompt="none"
+      style="background: transparent;">
+
+      <!-- slot: custom AR button (required by model-viewer spec) -->
+      <button slot="ar-button" style="display:none"></button>
+
+    </model-viewer>
+
+    <!-- Loading overlay -->
+    <div class="viewer-loader" id="viewer-loader">
+      <div class="loader-ring"></div>
+      <div class="loader-text">جارٍ تحميل النموذج…</div>
+    </div>
+
+    <!-- Gem floating label -->
+    <div id="gem-float-label">
+      <div class="float-name-en" id="float-en">Diamond</div>
+      <div class="float-name-ar" id="float-ar">الماس</div>
+    </div>
+
+    <!-- Interaction hint -->
+    <div id="hint">
+      <span class="hint-icon">👆</span>
+      <span>اسحب لتدوير • انقر مرتين للتكبير</span>
+    </div>
+
+    <!-- AR not supported note -->
+    <div id="no-ar-note">⚠️ جهازك لا يدعم وضع AR</div>
+
   </div>
-  <div class="hud-pill" id="gem-pill">💎 <span id="gem-pill-name"></span></div>
-</div>
- 
-<!-- ══ دليل المسح ══ -->
-<div id="scan-guide">
-  <div class="scan-frame">💎</div>
-  <p class="scan-text">وجّه الكاميرا نحو علامة الحجر</p>
-</div>
- 
-<!-- ══ بطاقة المعلومات ══ -->
-<div id="info-card">
-  <div class="card-handle"></div>
-  <div class="gem-header">
-    <div class="gem-icon-wrap" id="c-icon">💎</div>
-    <div class="gem-names">
-      <div class="name-ar" id="c-name-ar"></div>
-      <div class="name-en" id="c-name-en"></div>
+
+  <!-- ══ INFO PANEL ══ -->
+  <div id="info-panel">
+    <div id="info-toggle" onclick="toggleInfo()">
+      <div class="toggle-arrow"></div>
+    </div>
+
+    <div id="info-card">
+      <div class="card-header">
+        <div class="gem-emoji-wrap" id="c-emoji">💎</div>
+        <div class="card-titles">
+          <div class="card-name-en" id="c-en">Diamond</div>
+          <div class="card-name-ar" id="c-ar">الماس</div>
+        </div>
+      </div>
+      <p class="card-desc" id="c-desc"></p>
+      <div class="card-stats">
+        <div class="stat-box">
+          <div class="stat-lbl">صلابة موز</div>
+          <div class="stat-val" id="c-hard">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-lbl">الكثافة</div>
+          <div class="stat-val" id="c-dens">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-lbl">المنشأ</div>
+          <div class="stat-val" id="c-orig">—</div>
+        </div>
+      </div>
     </div>
   </div>
-  <p class="gem-desc" id="c-desc"></p>
-  <div class="stats-row">
-    <div class="stat-box"><div class="stat-lbl">صلابة موز</div><div class="stat-val" id="c-hard"></div></div>
-    <div class="stat-box"><div class="stat-lbl">كثافة</div><div class="stat-val" id="c-dens"></div></div>
-    <div class="stat-box"><div class="stat-lbl">المنشأ</div><div class="stat-val" id="c-orig"></div></div>
+
+  <!-- ══ GEM MENU ══ -->
+  <div id="gem-menu">
+    <div class="menu-scroll" id="menu-scroll">
+      <!-- Chips injected by JS -->
+    </div>
   </div>
-  <div class="price-row" id="c-price" style="display:none">
-    <span class="price-lbl">💰 السعر (ريال/غرام)</span>
-    <span class="price-val" id="c-price-val">—</span>
-  </div>
-  <div class="btn-row">
-    <button class="card-btn" id="more-btn">📖 اعرف أكثر</button>
-    <button class="card-btn" id="share-btn">🔗 مشاركة</button>
-  </div>
+
 </div>
- 
-<!-- ══ Toasts ══ -->
-<div id="toasts"></div>
- 
-<!-- ضع مفتاح API في config.js وأضفه لـ .gitignore
-     محتوى config.js:  window.GOLD_API_KEY = "مفتاحك"; -->
-<script src="config.js" onerror="console.warn('config.js غير موجود')"></script>
- 
+
+<!-- ══ TOASTS ══ -->
+<div id="toast-wrap"></div>
+
 <script>
-(function () {
- 
-  /* ══════════════════════════════════════
-     بيانات الأحجار
-  ══════════════════════════════════════ */
-  const GEMS = {
-    diamond: { nameAR:'ألماس',  nameEN:'Diamond', icon:'💎', color:'#B9F2FF', wikiEN:'Diamond',
-      desc:'أصلب مادة طبيعية على الأرض، يرمز للنقاء والقوة الأبدية.',
-      hardness:10,  density:'3.5',  origin:'روسيا' },
-    ruby:    { nameAR:'ياقوت',  nameEN:'Ruby',    icon:'🔴', color:'#E0115F', wikiEN:'Ruby',
-      desc:'حجر كريم أحمر يمثل العاطفة والشجاعة، من أغلى الأحجار في العالم.',
-      hardness:9,   density:'4.0',  origin:'ميانمار' },
-    emerald: { nameAR:'زمرد',   nameEN:'Emerald', icon:'🟢', color:'#50C878', wikiEN:'Emerald',
-      desc:'جوهرة خضراء نادرة ترمز للأمل والنمو، مميزة بلونها الأخضر الغامق.',
-      hardness:7.5, density:'2.7',  origin:'كولومبيا' },
-    topaz:   { nameAR:'توباز',  nameEN:'Topaz',   icon:'🟠', color:'#FFC87C', wikiEN:'Topaz',
-      desc:'حجر شفاف يتوفر بألوان متعددة، يرمز للصفاء والطاقة الإيجابية.',
-      hardness:8,   density:'3.5',  origin:'البرازيل' },
-    agate:   { nameAR:'عقيق',   nameEN:'Agate',   icon:'🟤', color:'#D3A57C', wikiEN:'Agate',
-      desc:'حجر ذو طبقات لونية مذهلة، استُخدم تاريخياً في الأختام والحلي.',
-      hardness:7,   density:'2.6',  origin:'اليمن' },
-    gold:    { nameAR:'ذهب',    nameEN:'Gold',    icon:'🥇', color:'#FFD700', wikiEN:'Gold',
-      desc:'معدن ثمين خالد، رمز الثروة والفخامة عبر الحضارات.',
-      hardness:2.5, density:'19.3', origin:'جنوب أفريقيا', livePrice:true },
-    silver:  { nameAR:'فضة',    nameEN:'Silver',  icon:'🥈', color:'#C0C0C0', wikiEN:'Silver',
-      desc:'معدن لامع يتصدر قائمة الموصلات الكهربائية، يُستخدم في المجوهرات والطب.',
-      hardness:2.7, density:'10.5', origin:'المكسيك', livePrice:true }
-  };
- 
-  /* ══════════════════════════════════════
-     الحالة
-  ══════════════════════════════════════ */
-  let currentGem    = null;
-  let arStarted     = false;   // ✅ مرة واحدة فقط
-  let markersbound  = false;   // ✅ ربط العلامات مرة واحدة فقط
-  let pricesFetched = false;
-  let prices        = {};
-  let rafId         = null;
-  const API_KEY = (typeof window.GOLD_API_KEY !== 'undefined') ? window.GOLD_API_KEY : null;
- 
-  /* ══════════════════════════════════════
-     جسيمات الخلفية
-  ══════════════════════════════════════ */
-  const pCanvas = document.getElementById('particles-canvas');
-  const pCtx    = pCanvas.getContext('2d');
-  let   pts     = [];
- 
-  function resizePCanvas() {
-    pCanvas.width  = innerWidth;
-    pCanvas.height = innerHeight;
+/* ══════════════════════════════════════════════
+   DATA — بيانات الأحجار السبعة
+══════════════════════════════════════════════ */
+const GEMS = [
+  {
+    id:       'diamond',
+    nameEN:   'Diamond',
+    nameAR:   'الماس',
+    icon:     '💎',
+    color:    '#B9F2FF',
+    model:    'models/diamond.glb',
+    desc:     'أصلب مادة طبيعية معروفة على وجه الأرض، يتكوّن من ذرات الكربون المرتبة في بنية بلورية مكعبة استثنائية. رمز الخلود والفخامة عبر آلاف السنين.',
+    hardness: '10 / 10',
+    density:  '3.51 g/cm³',
+    origin:   'روسيا • أفريقيا'
+  },
+  {
+    id:       'ruby',
+    nameEN:   'Ruby',
+    nameAR:   'الياقوت',
+    icon:     '🔴',
+    color:    '#E0115F',
+    model:    'models/ruby.glb',
+    desc:     'نوع نادر من معدن الكوراندوم يكتسب لونه الأحمر الناري من أيونات الكروم. يُعدّ من أغلى وأندر الأحجار الكريمة في العالم.',
+    hardness: '9 / 10',
+    density:  '4.0 g/cm³',
+    origin:   'ميانمار • تايلاند'
+  },
+  {
+    id:       'emerald',
+    nameEN:   'Emerald',
+    nameAR:   'الزمرد',
+    icon:     '💚',
+    color:    '#50C878',
+    model:    'models/emerald.glb',
+    desc:     'جوهرة خضراء ساحرة من مجموعة البيريل، تستمد لونها الأخضر الزاهي من الكروم والفاناديوم. يُطلق الخبراء على شوائبها الطبيعية اسم "الحديقة".',
+    hardness: '7.5 – 8',
+    density:  '2.76 g/cm³',
+    origin:   'كولومبيا • زامبيا'
+  },
+  {
+    id:       'topaz',
+    nameEN:   'Topaz',
+    nameAR:   'التوباز',
+    icon:     '🔷',
+    color:    '#48CAE4',
+    model:    'models/topaz.glb',
+    desc:     'معدن سيليكات الألومنيوم والفلور، يتوفر بطيف واسع من الألوان. أندر أنواعه هو "Imperial Topaz" ذو اللون البرتقالي الذهبي النادر.',
+    hardness: '8 / 10',
+    density:  '3.5 g/cm³',
+    origin:   'البرازيل • باكستان'
+  },
+  {
+    id:       'agate',
+    nameEN:   'Agate',
+    nameAR:   'العقيق',
+    icon:     '🟤',
+    color:    '#D4956A',
+    model:    'models/agate.glb',
+    desc:     'نوع فريد من الكوارتز الدقيق الحبيبات يتميز بنطاقاته اللونية المذهلة. استُخدم في صنع الأختام والحلي منذ آلاف السنين في الحضارات القديمة.',
+    hardness: '6.5 – 7',
+    density:  '2.6 g/cm³',
+    origin:   'اليمن • البرازيل'
+  },
+  {
+    id:       'gold',
+    nameEN:   'Gold',
+    nameAR:   'الذهب',
+    icon:     '🥇',
+    color:    '#FFD700',
+    model:    'models/gold.glb',
+    desc:     'معدن ثمين خالد عُرف منذ فجر الحضارة، يتميز بمقاومته الفائقة للتآكل ولمعانه الأبدي. شكّل عبر التاريخ أساس الاقتصاد العالمي واحتياطيات البنوك المركزية.',
+    hardness: '2.5 / 10',
+    density:  '19.3 g/cm³',
+    origin:   'جنوب أفريقيا • الصين'
+  },
+  {
+    id:       'silver',
+    nameEN:   'Silver',
+    nameAR:   'الفضة',
+    icon:     '🥈',
+    color:    '#C8C8D0',
+    model:    'models/silver.glb',
+    desc:     'يتربع الفضة على عرش الموصلات الكهربائية والحرارية بين جميع المعادن. يُستخدم على نطاق واسع في المجوهرات والعملات والإلكترونيات والأجهزة الطبية.',
+    hardness: '2.7 / 10',
+    density:  '10.5 g/cm³',
+    origin:   'المكسيك • البيرو'
   }
-  addEventListener('resize', resizePCanvas);
-  resizePCanvas();
- 
-  function initPts() {
-    pts = Array.from({length:40}, () => ({
-      x:  Math.random() * pCanvas.width,
-      y:  Math.random() * pCanvas.height,
-      r:  Math.random() * 1.8 + .4,
-      vx: (Math.random()-.5) * .3,
-      vy: (Math.random()-.5) * .3,
-      a:  Math.random() * .45 + .08
-    }));
-  }
-  initPts();
- 
-  function drawPts() {
-    if (document.getElementById('splash').classList.contains('hidden')) return;
-    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-    pts.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0 || p.x > pCanvas.width)  p.vx *= -1;
-      if (p.y < 0 || p.y > pCanvas.height) p.vy *= -1;
-      pCtx.beginPath();
-      pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      pCtx.fillStyle = `rgba(255,215,0,${p.a})`;
-      pCtx.fill();
-    });
-    rafId = requestAnimationFrame(drawPts);
-  }
-  drawPts();
- 
-  /* ══════════════════════════════════════
-     جلب الأسعار — مرة واحدة
-  ══════════════════════════════════════ */
-  async function fetchPrices() {
-    if (!API_KEY || pricesFetched) return;
-    pricesFetched = true;
-    const hdrs = { 'x-access-token': API_KEY, 'Content-Type': 'application/json' };
-    for (const [key, sym] of [['gold','XAU'],['silver','XAG']]) {
-      try {
-        const res  = await fetch(`https://www.goldapi.io/api/${sym}/SAR`, { headers: hdrs });
-        const data = await res.json();
-        prices[key] = data.price_gram_24k ?? (data.price ? +(data.price / 31.1035).toFixed(2) : null);
-      } catch { /* تجاهل */ }
-    }
-  }
- 
-  /* ══════════════════════════════════════
-     Toast
-  ══════════════════════════════════════ */
-  function toast(msg, err = false) {
-    const el = document.createElement('div');
-    el.className  = 'toast' + (err ? ' err' : '');
-    el.textContent = (err ? '⚠️ ' : '✨ ') + msg;
-    document.getElementById('toasts').appendChild(el);
-    setTimeout(() => el.remove(), 2800);
-  }
- 
-  /* ══════════════════════════════════════
-     بطاقة المعلومات
-  ══════════════════════════════════════ */
-  function openCard(gemId) {
-    const gem = GEMS[gemId];
-    if (!gem) return;
-    currentGem = { ...gem, id: gemId };
- 
-    const iconEl = document.getElementById('c-icon');
-    iconEl.textContent      = gem.icon;
-    iconEl.style.background = gem.color + '28';
-    iconEl.style.boxShadow  = '0 0 18px ' + gem.color + '55';
- 
-    document.getElementById('c-name-ar').textContent = gem.nameAR;
-    document.getElementById('c-name-en').textContent = gem.nameEN;
-    document.getElementById('c-desc').textContent    = gem.desc;
-    document.getElementById('c-hard').textContent    = gem.hardness;
-    document.getElementById('c-dens').textContent    = gem.density + ' g/cm³';
-    document.getElementById('c-orig').textContent    = gem.origin;
- 
-    document.getElementById('info-card').style.borderTopColor = gem.color;
- 
-    const priceRow = document.getElementById('c-price');
-    if (gem.livePrice) {
-      const p = prices[gemId];
-      document.getElementById('c-price-val').textContent = p ? p + ' ريال' : 'جارٍ التحميل…';
-      priceRow.style.display = 'flex';
-    } else {
-      priceRow.style.display = 'none';
-    }
- 
-    document.getElementById('info-card').classList.add('visible');
-    document.getElementById('cam-dot').classList.add('on');
-    document.getElementById('gem-pill-name').textContent = gem.nameEN;
-    document.getElementById('gem-pill').classList.add('on');
-    document.getElementById('scan-guide').style.display = 'none';
- 
-    if (navigator.vibrate) navigator.vibrate(15);
-    toast('تم اكتشاف ' + gem.nameAR);
-  }
- 
-  function closeCard() {
-    currentGem = null;
-    document.getElementById('info-card').classList.remove('visible');
-    document.getElementById('cam-dot').classList.remove('on');
-    document.getElementById('gem-pill').classList.remove('on');
-    document.getElementById('scan-guide').style.display = 'flex';
-  }
- 
-  /* ══════════════════════════════════════
-     ربط العلامات — مرة واحدة فقط ✅
-  ══════════════════════════════════════ */
-  function bindMarkers() {
-    if (markersbound) return;
-    markersbound = true;
-    document.querySelectorAll('a-marker').forEach(marker => {
-      const gemId = marker.getAttribute('data-gem-id');
-      if (!gemId || !GEMS[gemId]) return;
-      marker.addEventListener('markerFound', () => {
-        openCard(gemId);
-        const ring = document.getElementById('ring-' + gemId);
-        if (ring) ring.setAttribute('visible', true);
-      });
-      marker.addEventListener('markerLost', () => {
-        closeCard();
-        const ring = document.getElementById('ring-' + gemId);
-        if (ring) ring.setAttribute('visible', false);
-      });
-    });
-  }
- 
-  /* ══════════════════════════════════════
-     ✅ startAR — نفس أسلوب الكود الشغّال
-        display:none ← display:block
-        مرة واحدة فقط — لا تعديل بعدها
-  ══════════════════════════════════════ */
-  function startAR() {
-    // إيقاف جسيمات الخلفية
-    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
- 
-    document.getElementById('start-btn').disabled = true;
-    document.getElementById('loader-wrap').classList.add('active');
- 
-    fetchPrices();
- 
-    if (!arStarted) {
-      arStarted = true;
- 
-      // ✅ تفعيل المشهد مثل الكود الشغّال
-      const scene = document.getElementById('ar-scene');
-      scene.style.display = 'block';
- 
-      // انتظر loaded ثم أظهر الواجهة
-      let fallbackTimer;
- 
-      function onReady() {
-        clearTimeout(fallbackTimer);
-        bindMarkers();
-        showARUI();
-      }
- 
-      if (scene.hasLoaded) {
-        onReady();
-      } else {
-        scene.addEventListener('loaded', onReady, { once: true });
-        fallbackTimer = setTimeout(onReady, 9000);
-      }
- 
-    } else {
-      // العودة: AR جاهز، أظهر الواجهة فوراً
-      showARUI();
-    }
-  }
- 
-  function showARUI() {
-    document.getElementById('splash').classList.add('hidden');
-    document.getElementById('loader-wrap').classList.remove('active');
-    document.getElementById('hud').classList.add('active');
-    document.getElementById('scan-guide').style.display = 'flex';
-    toast('التجربة جاهزة — وجّه الكاميرا نحو العلامة');
-  }
- 
-  /* ══════════════════════════════════════
-     زر "ابدأ"
-  ══════════════════════════════════════ */
-  document.getElementById('start-btn').addEventListener('click', startAR);
- 
-  /* ══════════════════════════════════════
-     زر الخروج ✅
-     - يُظهر splash فوق المشهد (z-index: 9999)
-     - لا يمس a-scene أبداً
-     - يُعيد تفعيل زر البدء
-  ══════════════════════════════════════ */
-  document.getElementById('back-btn').addEventListener('click', function () {
-    closeCard();
-    document.getElementById('hud').classList.remove('active');
-    document.getElementById('scan-guide').style.display = 'none';
- 
-    // ✅ إظهار splash فوق كل شيء بدون المساس بالمشهد
-    const splash = document.getElementById('splash');
-    splash.classList.remove('hidden');
- 
-    // إعادة تفعيل الزر
-    document.getElementById('start-btn').disabled = false;
- 
-    // إعادة تشغيل الجسيمات
-    initPts();
-    drawPts();
+];
+
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+let activeIndex = 0;
+
+/* ══════════════════════════════════════════════
+   ELEMENTS
+══════════════════════════════════════════════ */
+const mv           = document.getElementById('mv');
+const loader       = document.getElementById('viewer-loader');
+const floatEN      = document.getElementById('float-en');
+const floatAR      = document.getElementById('float-ar');
+const cEmoji       = document.getElementById('c-emoji');
+const cEN          = document.getElementById('c-en');
+const cAR          = document.getElementById('c-ar');
+const cDesc        = document.getElementById('c-desc');
+const cHard        = document.getElementById('c-hard');
+const cDens        = document.getElementById('c-dens');
+const cOrig        = document.getElementById('c-orig');
+const menuScroll   = document.getElementById('menu-scroll');
+const noArNote     = document.getElementById('no-ar-note');
+
+/* ══════════════════════════════════════════════
+   BUILD MENU
+══════════════════════════════════════════════ */
+function buildMenu() {
+  GEMS.forEach((gem, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'gem-chip' + (i === 0 ? ' active' : '');
+    chip.style.setProperty('--chip-color', gem.color);
+    chip.dataset.index = i;
+    chip.innerHTML = `
+      <span class="chip-emoji">${gem.icon}</span>
+      <span class="chip-name-en">${gem.nameEN}</span>
+      <span class="chip-dot"></span>
+    `;
+    chip.addEventListener('click', () => selectGem(i));
+    menuScroll.appendChild(chip);
   });
- 
-  /* ══════════════════════════════════════
-     أزرار البطاقة
-  ══════════════════════════════════════ */
-  document.getElementById('more-btn').addEventListener('click', () => {
-    if (!currentGem) return;
-    window.open('https://en.wikipedia.org/wiki/' + encodeURIComponent(currentGem.wikiEN), '_blank');
+}
+
+/* ══════════════════════════════════════════════
+   SELECT GEM
+══════════════════════════════════════════════ */
+function selectGem(index) {
+  if (index === activeIndex) return;
+  activeIndex = index;
+  const gem = GEMS[index];
+
+  // Update menu chips
+  document.querySelectorAll('.gem-chip').forEach((c, i) => {
+    c.classList.toggle('active', i === index);
+    c.style.setProperty('--chip-color', GEMS[i].color);
   });
- 
-  document.getElementById('share-btn').addEventListener('click', async () => {
-    if (!currentGem) return;
-    const g = currentGem;
-    const shareObj = {
-      title: 'اكتشف ' + g.nameAR + ' في الواقع المعزز',
-      text:  g.nameAR + ' — ' + g.desc,
-      url:   location.href
-    };
-    try {
-      if (navigator.share) await navigator.share(shareObj);
-      else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(shareObj.text + '\n' + shareObj.url);
-        toast('تم نسخ المعلومات');
-      }
-    } catch (e) {
-      if (e.name !== 'AbortError') toast('تعذرت المشاركة', true);
-    }
-  });
- 
-})();
+
+  // Scroll chip into view
+  const chip = menuScroll.children[index];
+  chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+
+  // Show loader
+  loader.classList.remove('hidden');
+
+  // Update model
+  mv.src = gem.model;
+
+  // Update floating label
+  floatEN.textContent = gem.nameEN;
+  floatEN.style.color = gem.color;
+  floatEN.style.textShadow = `0 0 30px ${gem.color}66`;
+  floatAR.textContent = gem.nameAR;
+
+  // Update info card
+  cEmoji.textContent      = gem.icon;
+  cEmoji.style.background = gem.color + '22';
+  cEmoji.style.boxShadow  = `0 0 20px ${gem.color}44`;
+  cEN.textContent    = gem.nameEN;
+  cAR.textContent    = gem.nameAR;
+  cDesc.textContent  = gem.desc;
+  cHard.textContent  = gem.hardness;
+  cDens.textContent  = gem.density;
+  cOrig.textContent  = gem.origin;
+  cHard.style.color  = gem.color;
+
+  // Info card border accent
+  document.getElementById('info-card').style.borderTopColor = gem.color + '55';
+
+  toast(`✦ ${gem.nameAR}`);
+}
+
+/* ══════════════════════════════════════════════
+   MODEL VIEWER EVENTS
+══════════════════════════════════════════════ */
+mv.addEventListener('load', () => {
+  loader.classList.add('hidden');
+});
+
+mv.addEventListener('error', () => {
+  loader.classList.add('hidden');
+  toast('⚠️ تعذر تحميل النموذج', true);
+});
+
+// Check AR support
+mv.addEventListener('ar-status', (e) => {
+  if (e.detail.status === 'not-presenting') {
+    toast('✦ مرحباً بعودتك');
+  }
+});
+
+/* ══════════════════════════════════════════════
+   ENTER AR
+══════════════════════════════════════════════ */
+function enterAR() {
+  if (!mv.canActivateAR) {
+    noArNote.style.display = 'block';
+    setTimeout(() => { noArNote.style.display = 'none'; }, 3000);
+    toast('⚠️ AR غير مدعوم على هذا الجهاز', true);
+    return;
+  }
+  mv.activateAR();
+}
+
+/* ══════════════════════════════════════════════
+   TOGGLE INFO PANEL
+══════════════════════════════════════════════ */
+function toggleInfo() {
+  document.getElementById('info-panel').classList.toggle('collapsed');
+}
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+function toast(msg, isErr = false) {
+  const wrap = document.getElementById('toast-wrap');
+  const el   = document.createElement('div');
+  el.className   = 'toast';
+  el.textContent = msg;
+  if (isErr) el.style.borderColor = 'rgba(224,17,95,0.5)';
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 2800);
+}
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+function init() {
+  buildMenu();
+
+  // Populate info card with first gem
+  const gem = GEMS[0];
+  floatEN.textContent    = gem.nameEN;
+  floatEN.style.color    = gem.color;
+  floatAR.textContent    = gem.nameAR;
+  cEmoji.textContent     = gem.icon;
+  cEmoji.style.background = gem.color + '22';
+  cEN.textContent   = gem.nameEN;
+  cAR.textContent   = gem.nameAR;
+  cDesc.textContent = gem.desc;
+  cHard.textContent = gem.hardness;
+  cDens.textContent = gem.density;
+  cOrig.textContent = gem.origin;
+  cHard.style.color = gem.color;
+  document.getElementById('info-card').style.borderTopColor = gem.color + '55';
+}
+
+init();
 </script>
 </body>
 </html>
