@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>تجربة الأحجار الكريمة بالواقع المعزز</title>
-
+ 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-
+ 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-
+ 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
+ 
     body {
       font-family: 'Tajawal', sans-serif;
       background: #0a0a12;
@@ -26,20 +26,15 @@
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
-
-    #ar-wrapper {
-      position: fixed;
-      inset: 0;
-      z-index: 1;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.5s;
-    }
-    #ar-wrapper.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
+ 
+    /* ══════════════════════════════════════
+       ✅ المشهد مخفي بـ display:none مثل
+          الكود الشغّال — يُفعَّل مرة واحدة
+          ولا يُحذف أو يُخفى بعدها أبداً
+    ══════════════════════════════════════ */
+    #ar-scene { display: none; }
+ 
+    /* ══ شاشة البداية — فوق كل شيء ══ */
     #splash {
       position: fixed;
       inset: 0;
@@ -48,7 +43,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 50;
+      z-index: 9999;   /* أعلى z-index في الصفحة */
       transition: opacity 0.8s, visibility 0.8s;
     }
     #splash.hidden {
@@ -56,20 +51,20 @@
       visibility: hidden;
       pointer-events: none;
     }
-
+ 
     #particles-canvas {
       position: absolute;
       inset: 0;
       z-index: 0;
     }
-
+ 
     .splash-content {
       position: relative;
       z-index: 2;
       text-align: center;
       padding: 24px;
     }
-
+ 
     .logo-icon {
       font-size: 4rem;
       display: block;
@@ -81,7 +76,7 @@
       0%,100% { transform: translateY(0); }
       50%      { transform: translateY(-10px); }
     }
-
+ 
     h1 {
       font-family: 'Cinzel', serif;
       font-size: clamp(1.6rem, 6vw, 2.4rem);
@@ -90,7 +85,7 @@
       margin-bottom: 8px;
     }
     .subtitle { color: #aaa; margin-bottom: 28px; font-size: 0.95rem; }
-
+ 
     .guide-steps {
       display: flex;
       justify-content: center;
@@ -111,7 +106,7 @@
       50%      { transform: scale(1.2); }
     }
     .step-text { font-size: 0.72rem; color: #888; }
-
+ 
     .start-btn {
       background: linear-gradient(135deg, #ffd700, #b8860b);
       border: none;
@@ -124,11 +119,11 @@
       cursor: pointer;
       box-shadow: 0 0 30px rgba(255,215,0,0.35);
       letter-spacing: 2px;
-      transition: transform .2s, box-shadow .2s;
+      transition: transform .2s;
     }
-    .start-btn:active { transform: scale(0.95); }
+    .start-btn:active   { transform: scale(0.95); }
     .start-btn:disabled { opacity: 0.6; cursor: wait; }
-
+ 
     .loader-wrap {
       margin-top: 20px;
       height: 50px;
@@ -149,21 +144,23 @@
       animation: spin 1.2s linear infinite;
     }
     @keyframes spin { to { transform: rotate(405deg); } }
-
+ 
+    /* ══ HUD ══ */
     #hud {
       position: fixed;
       top: 0; left: 0; right: 0;
-      z-index: 40;
-      display: flex;
+      z-index: 500;
+      display: none;          /* مخفي حتى تبدأ التجربة */
       justify-content: space-between;
       align-items: center;
       padding: 14px 18px;
       pointer-events: none;
-      opacity: 0;
-      transition: opacity .4s;
     }
-    #hud.active { opacity: 1; pointer-events: auto; }
-
+    #hud.active {
+      display: flex;
+      pointer-events: auto;
+    }
+ 
     .hud-pill {
       background: rgba(10,10,20,0.72);
       backdrop-filter: blur(12px);
@@ -191,7 +188,7 @@
       align-items: center;
       justify-content: center;
     }
-
+ 
     .status-dot {
       width: 9px; height: 9px;
       border-radius: 50%;
@@ -205,7 +202,7 @@
       animation: blink 1.4s infinite;
     }
     @keyframes blink { 50% { opacity: .35; } }
-
+ 
     #gem-pill {
       opacity: 0;
       transition: opacity .3s;
@@ -213,18 +210,19 @@
       letter-spacing: 1px;
     }
     #gem-pill.on { opacity: 1; }
-
+ 
+    /* ══ دليل المسح ══ */
     #scan-guide {
       position: fixed;
       inset: 0;
-      display: flex;
+      display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 35;
+      z-index: 400;
       pointer-events: none;
     }
-
+ 
     .scan-frame {
       width: 200px; height: 200px;
       border: 2px dashed rgba(255,215,0,0.35);
@@ -241,12 +239,13 @@
       50%      { border-color: rgba(255,215,0,0.6); }
     }
     .scan-text { font-size: 0.85rem; color: rgba(255,255,255,0.45); }
-
+ 
+    /* ══ بطاقة المعلومات ══ */
     #info-card {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      z-index: 40;
-      background: rgba(12,12,22,0.82);
+      z-index: 500;
+      background: rgba(12,12,22,0.85);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border-top: 1px solid rgba(255,215,0,0.25);
@@ -261,15 +260,14 @@
       overflow-y: auto;
     }
     #info-card.visible { transform: translateY(0); }
-
+ 
     .card-handle {
       width: 38px; height: 4px;
       background: rgba(255,215,0,0.5);
       border-radius: 2px;
       align-self: center;
-      margin-bottom: 2px;
     }
-
+ 
     .gem-header { display: flex; gap: 14px; align-items: center; }
     .gem-icon-wrap {
       width: 52px; height: 52px;
@@ -287,7 +285,7 @@
       color: #ffd700;
       letter-spacing: 2px;
     }
-
+ 
     .gem-desc {
       font-size: 0.88rem;
       color: #ccc;
@@ -295,7 +293,7 @@
       border-right: 2px solid rgba(255,215,0,0.25);
       padding-right: 10px;
     }
-
+ 
     .stats-row { display: flex; gap: 8px; }
     .stat-box {
       flex: 1;
@@ -306,7 +304,7 @@
     }
     .stat-lbl { font-size: 0.62rem; color: #888; margin-bottom: 4px; }
     .stat-val  { font-size: 1rem; font-weight: 700; }
-
+ 
     .price-row {
       background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.04));
       border: 1px solid rgba(255,215,0,0.3);
@@ -318,7 +316,7 @@
     }
     .price-lbl { font-size: 0.85rem; color: #bbb; }
     .price-val { font-family: 'Cinzel', serif; font-size: 1.25rem; color: #ffd700; }
-
+ 
     .btn-row { display: flex; gap: 10px; }
     .card-btn {
       flex: 1;
@@ -335,12 +333,13 @@
       transition: background .18s;
     }
     .card-btn:active { background: rgba(255,215,0,0.25); }
-
+ 
+    /* ══ Toast ══ */
     #toasts {
       position: fixed;
       top: 72px; left: 50%;
       transform: translateX(-50%);
-      z-index: 100;
+      z-index: 9000;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -363,85 +362,80 @@
   </style>
 </head>
 <body>
-
-<!-- ══ مشهد AR — يُبنى مرة واحدة ولا يُحذف أبداً ══ -->
-<div id="ar-wrapper">
-  <a-scene id="ar-scene"
-    embedded
-    vr-mode-ui="enabled: false"
-    renderer="antialias: false; precision: mediump; colorManagement: true;"
-    arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;">
-
-    <a-assets timeout="15000">
-      <a-asset-item id="diamond-glb" src="models/diamond.glb"></a-asset-item>
-      <a-asset-item id="ruby-glb"    src="models/ruby.glb"></a-asset-item>
-      <a-asset-item id="emerald-glb" src="models/emerald.glb"></a-asset-item>
-      <a-asset-item id="topaz-glb"   src="models/topaz.glb"></a-asset-item>
-      <a-asset-item id="agate-glb"   src="models/agate.glb"></a-asset-item>
-      <a-asset-item id="gold-glb"    src="models/gold.glb"></a-asset-item>
-      <a-asset-item id="silver-glb"  src="models/silver.glb"></a-asset-item>
-    </a-assets>
-
-    <a-marker type="pattern" url="markers/diamond.patt" data-gem-id="diamond">
-      <a-entity gltf-model="#diamond-glb" scale="0.5 0.5 0.5" position="0 0.1 0"
-        animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-      <a-ring radius-inner="0.5" radius-outer="0.56" color="#B9F2FF" opacity="0.5"
-        rotation="-90 0 0" visible="false" id="ring-diamond"
-        animation__pulse="startEvents:show; property:scale; from:0.1 0.1 0.1; to:1 1 1; dur:500; easing:easeOutElastic;"></a-ring>
-    </a-marker>
-
-    <a-marker type="pattern" url="markers/ruby.patt" data-gem-id="ruby">
-      <a-entity gltf-model="#ruby-glb" scale="0.6 0.6 0.6" position="0 0.1 0"
-        animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-      <a-ring radius-inner="0.5" radius-outer="0.56" color="#E0115F" opacity="0.5"
-        rotation="-90 0 0" visible="false" id="ring-ruby"
-        animation__pulse="startEvents:show; property:scale; from:0.1 0.1 0.1; to:1 1 1; dur:500; easing:easeOutElastic;"></a-ring>
-    </a-marker>
-
-    <a-marker type="pattern" url="markers/emerald.patt" data-gem-id="emerald">
-      <a-entity gltf-model="#emerald-glb" scale="0.5 0.5 0.5" position="0 0.1 0"
-        animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-      <a-ring radius-inner="0.5" radius-outer="0.56" color="#50C878" opacity="0.5"
-        rotation="-90 0 0" visible="false" id="ring-emerald"
-        animation__pulse="startEvents:show; property:scale; from:0.1 0.1 0.1; to:1 1 1; dur:500; easing:easeOutElastic;"></a-ring>
-    </a-marker>
-
-    <a-marker type="pattern" url="markers/topaz.patt" data-gem-id="topaz">
-      <a-entity gltf-model="#topaz-glb" scale="0.45 0.45 0.45" position="0 0.1 0"
-        animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-      <a-ring radius-inner="0.5" radius-outer="0.56" color="#FFC87C" opacity="0.5"
-        rotation="-90 0 0" visible="false" id="ring-topaz"
-        animation__pulse="startEvents:show; property:scale; from:0.1 0.1 0.1; to:1 1 1; dur:500; easing:easeOutElastic;"></a-ring>
-    </a-marker>
-
-    <a-marker type="pattern" url="markers/agate.patt" data-gem-id="agate">
-      <a-entity gltf-model="#agate-glb" scale="0.6 0.6 0.6" position="0 0.1 0"
-        animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-      <a-ring radius-inner="0.5" radius-outer="0.56" color="#D3A57C" opacity="0.5"
-        rotation="-90 0 0" visible="false" id="ring-agate"
-        animation__pulse="startEvents:show; property:scale; from:0.1 0.1 0.1; to:1 1 1; dur:500; easing:easeOutElastic;"></a-ring>
-    </a-marker>
-
-    <a-marker type="pattern" url="markers/gold.patt" data-gem-id="gold">
-      <a-entity gltf-model="#gold-glb" scale="0.7 0.7 0.7" position="0 0.1 0"
-        animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-      <a-ring radius-inner="0.5" radius-outer="0.56" color="#FFD700" opacity="0.5"
-        rotation="-90 0 0" visible="false" id="ring-gold"
-        animation__pulse="startEvents:show; property:scale; from:0.1 0.1 0.1; to:1 1 1; dur:500; easing:easeOutElastic;"></a-ring>
-    </a-marker>
-
-    <a-marker type="pattern" url="markers/silver.patt" data-gem-id="silver">
-      <a-entity gltf-model="#silver-glb" scale="0.65 0.65 0.65" position="0 0.1 0"
-        animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
-      <a-ring radius-inner="0.5" radius-outer="0.56" color="#C0C0C0" opacity="0.5"
-        rotation="-90 0 0" visible="false" id="ring-silver"
-        animation__pulse="startEvents:show; property:scale; from:0.1 0.1 0.1; to:1 1 1; dur:500; easing:easeOutElastic;"></a-ring>
-    </a-marker>
-
-    <a-entity camera></a-entity>
-  </a-scene>
-</div>
-
+ 
+<!-- ══════════════════════════════════════
+     ✅ a-scene بـ display:none مثل الكود
+        الشغّال — يُفعَّل مرة واحدة فقط
+        عند startAR() ولا يُلمس بعدها
+══════════════════════════════════════ -->
+<a-scene id="ar-scene"
+  embedded
+  vr-mode-ui="enabled: false"
+  renderer="antialias: false; precision: mediump; colorManagement: true;"
+  arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;">
+ 
+  <a-assets timeout="15000">
+    <a-asset-item id="diamond-glb" src="models/diamond.glb"></a-asset-item>
+    <a-asset-item id="ruby-glb"    src="models/ruby.glb"></a-asset-item>
+    <a-asset-item id="emerald-glb" src="models/emerald.glb"></a-asset-item>
+    <a-asset-item id="topaz-glb"   src="models/topaz.glb"></a-asset-item>
+    <a-asset-item id="agate-glb"   src="models/agate.glb"></a-asset-item>
+    <a-asset-item id="gold-glb"    src="models/gold.glb"></a-asset-item>
+    <a-asset-item id="silver-glb"  src="models/silver.glb"></a-asset-item>
+  </a-assets>
+ 
+  <a-marker type="pattern" url="markers/diamond.patt" data-gem-id="diamond">
+    <a-entity gltf-model="#diamond-glb" scale="0.5 0.5 0.5" position="0 0.1 0"
+      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
+    <a-ring radius-inner="0.5" radius-outer="0.56" color="#B9F2FF" opacity="0.5"
+      rotation="-90 0 0" visible="false" id="ring-diamond"></a-ring>
+  </a-marker>
+ 
+  <a-marker type="pattern" url="markers/ruby.patt" data-gem-id="ruby">
+    <a-entity gltf-model="#ruby-glb" scale="0.6 0.6 0.6" position="0 0.1 0"
+      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
+    <a-ring radius-inner="0.5" radius-outer="0.56" color="#E0115F" opacity="0.5"
+      rotation="-90 0 0" visible="false" id="ring-ruby"></a-ring>
+  </a-marker>
+ 
+  <a-marker type="pattern" url="markers/emerald.patt" data-gem-id="emerald">
+    <a-entity gltf-model="#emerald-glb" scale="0.5 0.5 0.5" position="0 0.1 0"
+      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
+    <a-ring radius-inner="0.5" radius-outer="0.56" color="#50C878" opacity="0.5"
+      rotation="-90 0 0" visible="false" id="ring-emerald"></a-ring>
+  </a-marker>
+ 
+  <a-marker type="pattern" url="markers/topaz.patt" data-gem-id="topaz">
+    <a-entity gltf-model="#topaz-glb" scale="0.45 0.45 0.45" position="0 0.1 0"
+      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
+    <a-ring radius-inner="0.5" radius-outer="0.56" color="#FFC87C" opacity="0.5"
+      rotation="-90 0 0" visible="false" id="ring-topaz"></a-ring>
+  </a-marker>
+ 
+  <a-marker type="pattern" url="markers/agate.patt" data-gem-id="agate">
+    <a-entity gltf-model="#agate-glb" scale="0.6 0.6 0.6" position="0 0.1 0"
+      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
+    <a-ring radius-inner="0.5" radius-outer="0.56" color="#D3A57C" opacity="0.5"
+      rotation="-90 0 0" visible="false" id="ring-agate"></a-ring>
+  </a-marker>
+ 
+  <a-marker type="pattern" url="markers/gold.patt" data-gem-id="gold">
+    <a-entity gltf-model="#gold-glb" scale="0.7 0.7 0.7" position="0 0.1 0"
+      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
+    <a-ring radius-inner="0.5" radius-outer="0.56" color="#FFD700" opacity="0.5"
+      rotation="-90 0 0" visible="false" id="ring-gold"></a-ring>
+  </a-marker>
+ 
+  <a-marker type="pattern" url="markers/silver.patt" data-gem-id="silver">
+    <a-entity gltf-model="#silver-glb" scale="0.65 0.65 0.65" position="0 0.1 0"
+      animation="property:rotation; to:0 360 0; dur:10000; loop:true; easing:linear;"></a-entity>
+    <a-ring radius-inner="0.5" radius-outer="0.56" color="#C0C0C0" opacity="0.5"
+      rotation="-90 0 0" visible="false" id="ring-silver"></a-ring>
+  </a-marker>
+ 
+  <a-entity camera></a-entity>
+</a-scene>
+ 
 <!-- ══ شاشة البداية ══ -->
 <div id="splash">
   <canvas id="particles-canvas"></canvas>
@@ -461,7 +455,7 @@
     </div>
   </div>
 </div>
-
+ 
 <!-- ══ HUD ══ -->
 <div id="hud">
   <button class="hud-btn" id="back-btn">✕</button>
@@ -471,13 +465,13 @@
   </div>
   <div class="hud-pill" id="gem-pill">💎 <span id="gem-pill-name"></span></div>
 </div>
-
+ 
 <!-- ══ دليل المسح ══ -->
-<div id="scan-guide" style="display:none">
+<div id="scan-guide">
   <div class="scan-frame">💎</div>
   <p class="scan-text">وجّه الكاميرا نحو علامة الحجر</p>
 </div>
-
+ 
 <!-- ══ بطاقة المعلومات ══ -->
 <div id="info-card">
   <div class="card-handle"></div>
@@ -503,16 +497,17 @@
     <button class="card-btn" id="share-btn">🔗 مشاركة</button>
   </div>
 </div>
-
+ 
+<!-- ══ Toasts ══ -->
 <div id="toasts"></div>
-
+ 
 <!-- ضع مفتاح API في config.js وأضفه لـ .gitignore
      محتوى config.js:  window.GOLD_API_KEY = "مفتاحك"; -->
 <script src="config.js" onerror="console.warn('config.js غير موجود')"></script>
-
+ 
 <script>
 (function () {
-
+ 
   /* ══════════════════════════════════════
      بيانات الأحجار
   ══════════════════════════════════════ */
@@ -534,68 +529,67 @@
       hardness:7,   density:'2.6',  origin:'اليمن' },
     gold:    { nameAR:'ذهب',    nameEN:'Gold',    icon:'🥇', color:'#FFD700', wikiEN:'Gold',
       desc:'معدن ثمين خالد، رمز الثروة والفخامة عبر الحضارات.',
-      hardness:2.5, density:'19.3', origin:'جنوب أفريقيا', livePrice:true, apiSym:'XAU' },
+      hardness:2.5, density:'19.3', origin:'جنوب أفريقيا', livePrice:true },
     silver:  { nameAR:'فضة',    nameEN:'Silver',  icon:'🥈', color:'#C0C0C0', wikiEN:'Silver',
       desc:'معدن لامع يتصدر قائمة الموصلات الكهربائية، يُستخدم في المجوهرات والطب.',
-      hardness:2.7, density:'10.5', origin:'المكسيك', livePrice:true, apiSym:'XAG' }
+      hardness:2.7, density:'10.5', origin:'المكسيك', livePrice:true }
   };
-
+ 
   /* ══════════════════════════════════════
-     الحالة — arReady تعني "المشهد حُمِّل
-     وربطنا العلامات" وليس "AR مرئي"
+     الحالة
   ══════════════════════════════════════ */
-  let currentGem     = null;
-  let arReady        = false;   // ✅ يُعاد ضبطه false عند الخروج
-  let markersbound   = false;   // ✅ حماية من تكرار bindMarkers
-  let rafId          = null;
-  let prices         = {};
-  let pricesFetched  = false;   // جلب الأسعار مرة واحدة فقط
+  let currentGem    = null;
+  let arStarted     = false;   // ✅ مرة واحدة فقط
+  let markersbound  = false;   // ✅ ربط العلامات مرة واحدة فقط
+  let pricesFetched = false;
+  let prices        = {};
+  let rafId         = null;
   const API_KEY = (typeof window.GOLD_API_KEY !== 'undefined') ? window.GOLD_API_KEY : null;
-
+ 
   /* ══════════════════════════════════════
      جسيمات الخلفية
   ══════════════════════════════════════ */
   const pCanvas = document.getElementById('particles-canvas');
   const pCtx    = pCanvas.getContext('2d');
   let   pts     = [];
-
+ 
   function resizePCanvas() {
     pCanvas.width  = innerWidth;
     pCanvas.height = innerHeight;
   }
   addEventListener('resize', resizePCanvas);
   resizePCanvas();
-
+ 
   function initPts() {
-    pts = Array.from({length:45}, () => ({
-      x: Math.random() * pCanvas.width,
-      y: Math.random() * pCanvas.height,
-      r: Math.random() * 1.8 + .4,
-      vx:(Math.random()-.5)*.3,
-      vy:(Math.random()-.5)*.3,
-      a: Math.random()*.45+.08
+    pts = Array.from({length:40}, () => ({
+      x:  Math.random() * pCanvas.width,
+      y:  Math.random() * pCanvas.height,
+      r:  Math.random() * 1.8 + .4,
+      vx: (Math.random()-.5) * .3,
+      vy: (Math.random()-.5) * .3,
+      a:  Math.random() * .45 + .08
     }));
   }
   initPts();
-
+ 
   function drawPts() {
     if (document.getElementById('splash').classList.contains('hidden')) return;
     pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
     pts.forEach(p => {
       p.x += p.vx; p.y += p.vy;
-      if (p.x<0||p.x>pCanvas.width)  p.vx *= -1;
-      if (p.y<0||p.y>pCanvas.height) p.vy *= -1;
+      if (p.x < 0 || p.x > pCanvas.width)  p.vx *= -1;
+      if (p.y < 0 || p.y > pCanvas.height) p.vy *= -1;
       pCtx.beginPath();
-      pCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       pCtx.fillStyle = `rgba(255,215,0,${p.a})`;
       pCtx.fill();
     });
     rafId = requestAnimationFrame(drawPts);
   }
   drawPts();
-
+ 
   /* ══════════════════════════════════════
-     جلب الأسعار — مرة واحدة فقط
+     جلب الأسعار — مرة واحدة
   ══════════════════════════════════════ */
   async function fetchPrices() {
     if (!API_KEY || pricesFetched) return;
@@ -605,22 +599,22 @@
       try {
         const res  = await fetch(`https://www.goldapi.io/api/${sym}/SAR`, { headers: hdrs });
         const data = await res.json();
-        prices[key] = data.price_gram_24k ?? (data.price ? +(data.price/31.1035).toFixed(2) : null);
+        prices[key] = data.price_gram_24k ?? (data.price ? +(data.price / 31.1035).toFixed(2) : null);
       } catch { /* تجاهل */ }
     }
   }
-
+ 
   /* ══════════════════════════════════════
      Toast
   ══════════════════════════════════════ */
-  function toast(msg, err=false) {
+  function toast(msg, err = false) {
     const el = document.createElement('div');
-    el.className = 'toast' + (err ? ' err' : '');
+    el.className  = 'toast' + (err ? ' err' : '');
     el.textContent = (err ? '⚠️ ' : '✨ ') + msg;
     document.getElementById('toasts').appendChild(el);
     setTimeout(() => el.remove(), 2800);
   }
-
+ 
   /* ══════════════════════════════════════
      بطاقة المعلومات
   ══════════════════════════════════════ */
@@ -628,22 +622,21 @@
     const gem = GEMS[gemId];
     if (!gem) return;
     currentGem = { ...gem, id: gemId };
-
+ 
     const iconEl = document.getElementById('c-icon');
-    iconEl.textContent     = gem.icon;
+    iconEl.textContent      = gem.icon;
     iconEl.style.background = gem.color + '28';
     iconEl.style.boxShadow  = '0 0 18px ' + gem.color + '55';
-
+ 
     document.getElementById('c-name-ar').textContent = gem.nameAR;
     document.getElementById('c-name-en').textContent = gem.nameEN;
     document.getElementById('c-desc').textContent    = gem.desc;
     document.getElementById('c-hard').textContent    = gem.hardness;
     document.getElementById('c-dens').textContent    = gem.density + ' g/cm³';
     document.getElementById('c-orig').textContent    = gem.origin;
-
-    const card = document.getElementById('info-card');
-    card.style.borderTopColor = gem.color;
-
+ 
+    document.getElementById('info-card').style.borderTopColor = gem.color;
+ 
     const priceRow = document.getElementById('c-price');
     if (gem.livePrice) {
       const p = prices[gemId];
@@ -652,17 +645,17 @@
     } else {
       priceRow.style.display = 'none';
     }
-
-    card.classList.add('visible');
+ 
+    document.getElementById('info-card').classList.add('visible');
     document.getElementById('cam-dot').classList.add('on');
     document.getElementById('gem-pill-name').textContent = gem.nameEN;
     document.getElementById('gem-pill').classList.add('on');
     document.getElementById('scan-guide').style.display = 'none';
-
+ 
     if (navigator.vibrate) navigator.vibrate(15);
     toast('تم اكتشاف ' + gem.nameAR);
   }
-
+ 
   function closeCard() {
     currentGem = null;
     document.getElementById('info-card').classList.remove('visible');
@@ -670,24 +663,21 @@
     document.getElementById('gem-pill').classList.remove('on');
     document.getElementById('scan-guide').style.display = 'flex';
   }
-
+ 
   /* ══════════════════════════════════════
      ربط العلامات — مرة واحدة فقط ✅
   ══════════════════════════════════════ */
   function bindMarkers() {
-    if (markersbound) return;   // ✅ حماية من التكرار
+    if (markersbound) return;
     markersbound = true;
-
     document.querySelectorAll('a-marker').forEach(marker => {
       const gemId = marker.getAttribute('data-gem-id');
       if (!gemId || !GEMS[gemId]) return;
-
       marker.addEventListener('markerFound', () => {
         openCard(gemId);
         const ring = document.getElementById('ring-' + gemId);
-        if (ring) { ring.setAttribute('visible', true); ring.emit('show'); }
+        if (ring) ring.setAttribute('visible', true);
       });
-
       marker.addEventListener('markerLost', () => {
         closeCard();
         const ring = document.getElementById('ring-' + gemId);
@@ -695,83 +685,86 @@
       });
     });
   }
-
+ 
   /* ══════════════════════════════════════
-     إظهار واجهة AR
+     ✅ startAR — نفس أسلوب الكود الشغّال
+        display:none ← display:block
+        مرة واحدة فقط — لا تعديل بعدها
   ══════════════════════════════════════ */
-  function showAR() {
-    document.getElementById('ar-wrapper').classList.add('active');
+  function startAR() {
+    // إيقاف جسيمات الخلفية
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+ 
+    document.getElementById('start-btn').disabled = true;
+    document.getElementById('loader-wrap').classList.add('active');
+ 
+    fetchPrices();
+ 
+    if (!arStarted) {
+      arStarted = true;
+ 
+      // ✅ تفعيل المشهد مثل الكود الشغّال
+      const scene = document.getElementById('ar-scene');
+      scene.style.display = 'block';
+ 
+      // انتظر loaded ثم أظهر الواجهة
+      let fallbackTimer;
+ 
+      function onReady() {
+        clearTimeout(fallbackTimer);
+        bindMarkers();
+        showARUI();
+      }
+ 
+      if (scene.hasLoaded) {
+        onReady();
+      } else {
+        scene.addEventListener('loaded', onReady, { once: true });
+        fallbackTimer = setTimeout(onReady, 9000);
+      }
+ 
+    } else {
+      // العودة: AR جاهز، أظهر الواجهة فوراً
+      showARUI();
+    }
+  }
+ 
+  function showARUI() {
     document.getElementById('splash').classList.add('hidden');
+    document.getElementById('loader-wrap').classList.remove('active');
     document.getElementById('hud').classList.add('active');
     document.getElementById('scan-guide').style.display = 'flex';
-    document.getElementById('loader-wrap').classList.remove('active');
     toast('التجربة جاهزة — وجّه الكاميرا نحو العلامة');
   }
-
+ 
   /* ══════════════════════════════════════
-     زر "ابدأ" ✅
-     - إذا arReady: أظهر مباشرة (عودة من splash)
-     - إذا لا: انتظر loaded ثم أظهر
+     زر "ابدأ"
   ══════════════════════════════════════ */
-  document.getElementById('start-btn').addEventListener('click', function () {
-    this.disabled = true;
-    document.getElementById('loader-wrap').classList.add('active');
-
-    // إيقاف الجسيمات
-    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-
-    // جلب الأسعار مرة واحدة
-    fetchPrices();
-
-    // ✅ إذا المشهد جاهز من قبل: أظهر فوراً
-    if (arReady) {
-      showAR();
-      return;
-    }
-
-    const scene = document.getElementById('ar-scene');
-    let fallbackTimer;
-
-    function onReady() {
-      if (arReady) return;
-      arReady = true;
-      clearTimeout(fallbackTimer);
-      bindMarkers();
-      showAR();
-    }
-
-    if (scene.hasLoaded) {
-      onReady();
-    } else {
-      scene.addEventListener('loaded', onReady, { once: true });
-      fallbackTimer = setTimeout(onReady, 9000);
-    }
-  });
-
+  document.getElementById('start-btn').addEventListener('click', startAR);
+ 
   /* ══════════════════════════════════════
      زر الخروج ✅
-     - يخفي الواجهة فقط
-     - يُعيد تفعيل الزر
-     - لا يُغير arReady (المشهد جاهز دائماً)
-     - عند العودة: زر "ابدأ" يستدعي showAR مباشرة
+     - يُظهر splash فوق المشهد (z-index: 9999)
+     - لا يمس a-scene أبداً
+     - يُعيد تفعيل زر البدء
   ══════════════════════════════════════ */
   document.getElementById('back-btn').addEventListener('click', function () {
     closeCard();
-
-    document.getElementById('ar-wrapper').classList.remove('active');
     document.getElementById('hud').classList.remove('active');
     document.getElementById('scan-guide').style.display = 'none';
-    document.getElementById('splash').classList.remove('hidden');
-
-    // ✅ إعادة تفعيل زر البدء
-    const btn = document.getElementById('start-btn');
-    btn.disabled = false;
-
+ 
+    // ✅ إظهار splash فوق كل شيء بدون المساس بالمشهد
+    const splash = document.getElementById('splash');
+    splash.classList.remove('hidden');
+ 
+    // إعادة تفعيل الزر
+    document.getElementById('start-btn').disabled = false;
+ 
     // إعادة تشغيل الجسيمات
     initPts();
     drawPts();
   });
-
+ 
   /* ══════════════════════════════════════
      أزرار البطاقة
   ══════════════════════════════════════ */
@@ -779,7 +772,7 @@
     if (!currentGem) return;
     window.open('https://en.wikipedia.org/wiki/' + encodeURIComponent(currentGem.wikiEN), '_blank');
   });
-
+ 
   document.getElementById('share-btn').addEventListener('click', async () => {
     if (!currentGem) return;
     const g = currentGem;
@@ -798,7 +791,7 @@
       if (e.name !== 'AbortError') toast('تعذرت المشاركة', true);
     }
   });
-
+ 
 })();
 </script>
 </body>
