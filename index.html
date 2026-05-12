@@ -1,870 +1,934 @@
 <!DOCTYPE html>
+
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Gemstones AR — معرض الأحجار الكريمة</title>
 
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-  <!-- Model Viewer -->
+  <!-- Three.js لتوليد النماذج -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- model-viewer للعرض والـ AR -->
+
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
   <style>
-    /* ══════════════════════════════════════
-       DESIGN TOKENS
-    ══════════════════════════════════════ */
     :root {
       --gold:       #D4AF37;
-      --gold-light: #F5D76E;
-      --gold-dim:   rgba(212,175,55,0.18);
-      --glass-bg:   rgba(8, 8, 18, 0.72);
-      --glass-border: rgba(212,175,55,0.22);
-      --surface:    rgba(14, 14, 28, 0.85);
-      --text-main:  #f0ece0;
-      --text-muted: rgba(240,236,224,0.5);
-      --radius-lg:  20px;
-      --radius-md:  14px;
-      --radius-sm:  10px;
-      --font-en:    'Cinzel', serif;
-      --font-ar:    'Tajawal', sans-serif;
-      --transition: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      --gold-lt:    #F5D76E;
+      --gold-dim:   rgba(212,175,55,0.14);
+      --glass:      rgba(8,8,18,0.85);
+      --glass-b:    rgba(212,175,55,0.22);
+      --text:       #f0ece0;
+      --muted:      rgba(240,236,224,0.46);
+      --ease:       0.38s cubic-bezier(0.22,1,0.36,1);
+      --fn-en:      'Cinzel', serif;
+      --fn-ar:      'Tajawal', sans-serif;
     }
 
-    /* ══════════════════════════════════════
-       RESET & BASE
-    ══════════════════════════════════════ */
-    *, *::before, *::after {
-      margin: 0; padding: 0; box-sizing: border-box;
-    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
     html, body {
-      width: 100%; height: 100%;
-      overflow: hidden;
-      background: #060610;
-      color: var(--text-main);
-      font-family: var(--font-ar);
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
+      width:100%; height:100%;
+      overflow:hidden;
+      background:#07070f;
+      color:var(--text);
+      font-family:var(--fn-ar);
+      -webkit-tap-highlight-color:transparent;
+      user-select:none;
     }
 
-    /* ══════════════════════════════════════
-       BACKGROUND GRADIENT
-    ══════════════════════════════════════ */
     body::before {
-      content: '';
-      position: fixed; inset: 0; z-index: 0;
+      content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
       background:
         radial-gradient(ellipse 80% 50% at 20% 20%, rgba(212,175,55,0.06) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 60% at 80% 80%, rgba(100,60,200,0.06) 0%, transparent 60%);
-      pointer-events: none;
+        radial-gradient(ellipse 60% 60% at 80% 80%, rgba(80,50,180,0.06) 0%, transparent 60%);
     }
 
-    /* ══════════════════════════════════════
-       APP SHELL
-    ══════════════════════════════════════ */
     #app {
-      position: fixed; inset: 0; z-index: 1;
-      display: flex;
-      flex-direction: column;
+      position:fixed; inset:0; z-index:1;
+      display:flex; flex-direction:column;
     }
 
-    /* ══════════════════════════════════════
-       TOP BAR
-    ══════════════════════════════════════ */
+    /* ══ TOPBAR ══ */
     #topbar {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px 12px;
-      background: linear-gradient(to bottom, rgba(6,6,16,0.95), transparent);
-      position: relative; z-index: 10;
+      flex-shrink:0;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px 10px;
+      background:linear-gradient(to bottom, rgba(7,7,15,0.97), transparent);
+      position:relative; z-index:10;
     }
 
     .tb-logo {
-      font-family: var(--font-en);
-      font-size: 1.1rem;
-      letter-spacing: 4px;
-      color: var(--gold);
-      text-transform: uppercase;
-      animation: logoGlow 4s ease-in-out infinite;
+      font-family:var(--fn-en); font-size:1.05rem;
+      letter-spacing:4px; color:var(--gold);
+      animation:logoGlow 4s ease-in-out infinite;
     }
     @keyframes logoGlow {
-      0%,100% { text-shadow: 0 0 12px rgba(212,175,55,0.3); }
-      50%      { text-shadow: 0 0 28px rgba(212,175,55,0.7); }
+      0%,100% { text-shadow:0 0 10px rgba(212,175,55,0.25); }
+      50%      { text-shadow:0 0 28px rgba(212,175,55,0.7); }
     }
+    .tb-sub { font-size:0.68rem; color:var(--muted); letter-spacing:1px; margin-top:2px; }
 
-    .tb-subtitle {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      letter-spacing: 1px;
+    /* ══ AR BUTTON ══ */
+    #ar-btn {
+      display:flex; align-items:center; gap:7px;
+      padding:9px 16px;
+      background:var(--gold-dim);
+      border:1px solid var(--glass-b);
+      border-radius:50px;
+      font-family:var(--fn-ar); font-size:0.82rem;
+      color:var(--gold-lt); cursor:pointer;
+      transition:background var(--ease), box-shadow var(--ease),
+                  opacity var(--ease), transform .15s;
     }
+    #ar-btn:hover:not(:disabled) {
+      background:rgba(212,175,55,0.28);
+      box-shadow:0 0 20px rgba(212,175,55,0.2);
+    }
+    #ar-btn:active:not(:disabled){ transform:scale(0.95); }
+    #ar-btn:disabled {
+      opacity:0.38; cursor:not-allowed;
+      border-color:rgba(255,255,255,0.08);
+      color:var(--muted);
+    }
+    #ar-btn svg { width:15px; height:15px; flex-shrink:0; }
 
-    /* AR button styled via slot */
-    #ar-trigger-wrap {
-      position: relative;
-    }
-    .ar-pill {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 9px 16px;
-      background: var(--gold-dim);
-      border: 1px solid var(--glass-border);
-      border-radius: 50px;
-      font-family: var(--font-ar);
-      font-size: 0.82rem;
-      color: var(--gold-light);
-      cursor: pointer;
-      transition: background var(--transition), box-shadow var(--transition);
-      white-space: nowrap;
-    }
-    .ar-pill:hover  { background: rgba(212,175,55,0.28); }
-    .ar-pill:active { transform: scale(0.95); }
-    .ar-pill svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-    /* ══════════════════════════════════════
-       MODEL VIEWER — main stage
-    ══════════════════════════════════════ */
-    #viewer-wrap {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-    }
+    /* ══ VIEWER ══ */
+    #viewer-wrap { flex:1; position:relative; overflow:hidden; }
 
     model-viewer {
-      width: 100%;
-      height: 100%;
-      background-color: transparent;
-      --poster-color: transparent;
+      width:100%; height:100%;
+      background-color:transparent;
+      --poster-color:transparent;
+    }
+    model-viewer::part(default-ar-button)    { display:none; }
+    model-viewer::part(default-progress-bar){ display:none; }
+
+    /* ══ LOADER ══ */
+    #mv-loader {
+      position:absolute; inset:0; z-index:5;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:14px;
+      background:rgba(7,7,15,0.65); backdrop-filter:blur(8px);
+      transition:opacity .4s, visibility .4s;
+    }
+    #mv-loader.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+    .ring {
+      width:48px; height:48px;
+      border:3px solid rgba(212,175,55,0.1);
+      border-top-color:var(--gold);
+      border-radius:50%;
+      animation:spin 0.9s linear infinite;
+    }
+    @keyframes spin { to{ transform:rotate(360deg); } }
+    .loader-txt { font-size:0.78rem; color:var(--muted); letter-spacing:1px; }
+    .progress-wrap {
+      width:140px; height:3px;
+      background:rgba(255,255,255,0.07); border-radius:2px; overflow:hidden;
+    }
+    #progress-bar {
+      height:100%; width:0%;
+      background:linear-gradient(90deg, var(--gold), var(--gold-lt));
+      border-radius:2px;
+      transition:width .25s ease;
     }
 
-    /* Hide default AR button — we use our own */
-    model-viewer::part(default-ar-button) { display: none; }
+    /* ══ FLOAT LABEL ══ */
+    #float-label {
+      position:absolute; top:14px; left:50%;
+      transform:translateX(-50%);
+      z-index:6; text-align:center; pointer-events:none;
+    }
+    .fl-en {
+      font-family:var(--fn-en);
+      font-size:clamp(1.3rem, 4.5vw, 1.9rem);
+      letter-spacing:4px; color:var(--gold);
+      text-shadow:0 0 28px rgba(212,175,55,0.45);
+      transition:color .4s, text-shadow .4s;
+    }
+    .fl-ar { font-size:0.78rem; color:var(--muted); letter-spacing:1px; margin-top:2px; }
 
-    /* Loading overlay inside viewer */
-    .viewer-loader {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      background: rgba(6,6,16,0.6);
-      backdrop-filter: blur(6px);
-      z-index: 5;
-      transition: opacity 0.4s, visibility 0.4s;
+    /* ══ STATUS BADGE ══ */
+    #status-badge {
+      position:absolute; bottom:12px; left:50%;
+      transform:translateX(-50%);
+      z-index:7; font-size:0.7rem;
+      color:var(--muted); background:rgba(7,7,15,0.75);
+      padding:5px 14px; border-radius:50px;
+      border:1px solid rgba(255,255,255,0.07);
+      pointer-events:none; white-space:nowrap;
+      opacity:0; transition:opacity .4s;
     }
-    .viewer-loader.hidden { opacity: 0; visibility: hidden; }
+    #status-badge.show { opacity:1; }
 
-    .loader-ring {
-      width: 52px; height: 52px;
-      border: 3px solid rgba(212,175,55,0.15);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* ══ INFO PANEL ══ */
+    #info-panel { flex-shrink:0; position:relative; z-index:10; }
 
-    .loader-text {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-    }
-
-    /* Gem name floating label */
-    #gem-float-label {
-      position: absolute;
-      top: 16px; left: 50%;
-      transform: translateX(-50%);
-      z-index: 6;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      pointer-events: none;
-      transition: opacity var(--transition);
-    }
-    .float-name-en {
-      font-family: var(--font-en);
-      font-size: clamp(1.4rem, 5vw, 2rem);
-      letter-spacing: 4px;
-      color: var(--gold);
-      text-shadow: 0 0 30px rgba(212,175,55,0.5);
-    }
-    .float-name-ar {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-    }
-
-    /* Interaction hint */
-    #hint {
-      position: absolute;
-      bottom: 16px; left: 50%;
-      transform: translateX(-50%);
-      z-index: 6;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      pointer-events: none;
-      animation: fadeHint 4s ease 1.5s forwards;
-      opacity: 0;
-    }
-    @keyframes fadeHint {
-      0%   { opacity: 0; }
-      20%  { opacity: 1; }
-      80%  { opacity: 1; }
-      100% { opacity: 0; }
-    }
-    .hint-icon { font-size: 1rem; }
-
-    /* ══════════════════════════════════════
-       INFO CARD (slides up from bottom)
-    ══════════════════════════════════════ */
-    #info-panel {
-      flex-shrink: 0;
-      position: relative;
-      z-index: 10;
-    }
-
-    /* Toggle tab */
     #info-toggle {
-      position: absolute;
-      top: -36px; left: 50%;
-      transform: translateX(-50%);
-      width: 80px; height: 28px;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-bottom: none;
-      border-radius: 12px 12px 0 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 2;
-      backdrop-filter: blur(12px);
+      position:absolute; top:-34px; left:50%; transform:translateX(-50%);
+      width:72px; height:26px;
+      background:var(--glass); border:1px solid var(--glass-b);
+      border-bottom:none; border-radius:12px 12px 0 0;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; backdrop-filter:blur(14px);
     }
-    .toggle-arrow {
-      width: 28px; height: 3px;
-      background: rgba(212,175,55,0.45);
-      border-radius: 2px;
-      position: relative;
-      transition: transform 0.3s;
+    .chevron {
+      width:22px; height:3px;
+      background:rgba(212,175,55,0.4); border-radius:2px; position:relative;
     }
-    .toggle-arrow::before, .toggle-arrow::after {
-      content: '';
-      position: absolute;
-      width: 14px; height: 3px;
-      background: rgba(212,175,55,0.45);
-      border-radius: 2px;
-      top: -5px;
+    .chevron::before, .chevron::after {
+      content:''; position:absolute;
+      width:12px; height:3px;
+      background:rgba(212,175,55,0.4); border-radius:2px; top:-5px;
     }
-    .toggle-arrow::before { left: 1px;  transform: rotate(40deg); transform-origin: right; }
-    .toggle-arrow::after  { right: 1px; transform: rotate(-40deg); transform-origin: left; }
-    #info-panel.collapsed .toggle-arrow::before { top: 5px; transform: rotate(-40deg); transform-origin: right; }
-    #info-panel.collapsed .toggle-arrow::after  { top: 5px; transform: rotate(40deg);  transform-origin: left; }
+    .chevron::before { left:1px;  transform:rotate(40deg);  transform-origin:right; }
+    .chevron::after  { right:1px; transform:rotate(-40deg); transform-origin:left; }
+    #info-panel.collapsed .chevron::before { top:5px; transform:rotate(-40deg); transform-origin:right; }
+    #info-panel.collapsed .chevron::after  { top:5px; transform:rotate(40deg);  transform-origin:left; }
 
-    /* Card body */
     #info-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(24px) saturate(160%);
-      -webkit-backdrop-filter: blur(24px) saturate(160%);
-      border-top: 1px solid var(--glass-border);
-      padding: 16px 20px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      max-height: 40vh;
-      overflow-y: auto;
-      transition: max-height var(--transition), padding var(--transition);
+      background:var(--glass);
+      backdrop-filter:blur(24px) saturate(160%);
+      -webkit-backdrop-filter:blur(24px) saturate(160%);
+      border-top:1px solid var(--glass-b);
+      padding:14px 18px 18px;
+      display:flex; flex-direction:column; gap:12px;
+      max-height:38vh; overflow-y:auto;
+      transition:max-height var(--ease), padding var(--ease);
     }
     #info-panel.collapsed #info-card {
-      max-height: 0;
-      padding-top: 0;
-      padding-bottom: 0;
-      overflow: hidden;
+      max-height:0; padding-top:0; padding-bottom:0; overflow:hidden;
     }
 
-    /* Card header */
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
+    .c-header { display:flex; align-items:center; gap:12px; }
+    .c-emoji {
+      width:46px; height:46px; border-radius:13px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.7rem; flex-shrink:0;
+      transition:background .3s, box-shadow .3s;
     }
-    .gem-emoji-wrap {
-      width: 50px; height: 50px;
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.8rem;
-      flex-shrink: 0;
-      transition: background 0.3s, box-shadow 0.3s;
+    .c-titles { flex:1; min-width:0; }
+    .c-en {
+      font-family:var(--fn-en); font-size:1.1rem;
+      color:var(--gold); letter-spacing:2px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .card-titles { flex: 1; min-width: 0; }
-    .card-name-en {
-      font-family: var(--font-en);
-      font-size: 1.15rem;
-      color: var(--gold);
-      letter-spacing: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .card-name-ar {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 2px;
+    .c-ar { font-size:0.82rem; color:var(--muted); margin-top:2px; }
+
+    .c-desc {
+      font-size:0.83rem; color:rgba(240,236,224,0.72);
+      line-height:1.78; border-right:2px solid var(--glass-b); padding-right:10px;
     }
 
-    /* Description */
-    .card-desc {
-      font-size: 0.84rem;
-      color: rgba(240,236,224,0.72);
-      line-height: 1.75;
-      border-right: 2px solid var(--glass-border);
-      padding-right: 12px;
+    .c-stats { display:flex; gap:7px; }
+    .stat {
+      flex:1; background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:10px; padding:8px 5px; text-align:center;
     }
+    .s-lbl { font-size:0.58rem; color:var(--muted); margin-bottom:3px; }
+    .s-val { font-size:0.88rem; font-weight:700; }
 
-    /* Stats */
-    .card-stats {
-      display: flex;
-      gap: 8px;
-    }
-    .stat-box {
-      flex: 1;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: var(--radius-sm);
-      padding: 9px 6px;
-      text-align: center;
-    }
-    .stat-lbl { font-size: 0.6rem;  color: var(--text-muted); margin-bottom: 4px; }
-    .stat-val { font-size: 0.92rem; font-weight: 700; }
-
-    /* ══════════════════════════════════════
-       BOTTOM GEM MENU
-    ══════════════════════════════════════ */
+    /* ══ GEM MENU ══ */
     #gem-menu {
-      flex-shrink: 0;
-      padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
-      background: linear-gradient(to top, rgba(6,6,16,0.98), rgba(6,6,16,0.7));
-      border-top: 1px solid rgba(255,255,255,0.05);
-      position: relative; z-index: 10;
+      flex-shrink:0;
+      padding:8px 0 calc(8px + env(safe-area-inset-bottom));
+      background:linear-gradient(to top, rgba(7,7,15,0.99), rgba(7,7,15,0.6));
+      border-top:1px solid rgba(255,255,255,0.04);
+      position:relative; z-index:10;
     }
-
     .menu-scroll {
-      display: flex;
-      gap: 10px;
-      padding: 0 16px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
+      display:flex; gap:8px; padding:0 14px;
+      overflow-x:auto; scrollbar-width:none;
+      -webkit-overflow-scrolling:touch;
     }
-    .menu-scroll::-webkit-scrollbar { display: none; }
+    .menu-scroll::-webkit-scrollbar { display:none; }
 
     .gem-chip {
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 14px;
-      border-radius: var(--radius-md);
-      border: 1px solid rgba(255,255,255,0.07);
-      background: rgba(255,255,255,0.04);
-      cursor: pointer;
-      transition: background var(--transition), border-color var(--transition),
-                  transform var(--transition), box-shadow var(--transition);
-      min-width: 68px;
-      position: relative;
+      flex-shrink:0;
+      display:flex; flex-direction:column; align-items:center; gap:5px;
+      padding:9px 12px; min-width:62px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.06);
+      background:rgba(255,255,255,0.03);
+      cursor:pointer; position:relative;
+      transition:background var(--ease), border-color var(--ease),
+                  box-shadow var(--ease), transform .15s;
     }
-    .gem-chip:active { transform: scale(0.93); }
-
+    .gem-chip:active { transform:scale(0.93); }
     .gem-chip.active {
-      border-color: var(--glass-border);
-      background: var(--gold-dim);
-      box-shadow: 0 0 16px rgba(212,175,55,0.15);
+      border-color:var(--glass-b);
+      background:var(--gold-dim);
+      box-shadow:0 0 16px rgba(212,175,55,0.13);
     }
-
-    .chip-emoji { font-size: 1.6rem; line-height: 1; }
-
-    .chip-name-en {
-      font-family: var(--font-en);
-      font-size: 0.6rem;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      text-align: center;
-      transition: color var(--transition);
-    }
-    .gem-chip.active .chip-name-en { color: var(--gold-light); }
-
-    /* Active dot indicator */
-    .chip-dot {
-      width: 4px; height: 4px;
-      border-radius: 50%;
-      background: var(--gold);
-      opacity: 0;
-      transition: opacity 0.2s;
-      position: absolute;
-      bottom: 5px;
-    }
-    .gem-chip.active .chip-dot { opacity: 1; }
-
-    /* Color accent line on active chip */
     .gem-chip.active::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 20%; right: 20%;
-      height: 2px;
-      border-radius: 0 0 2px 2px;
-      background: var(--chip-color, var(--gold));
+      content:''; position:absolute;
+      top:0; left:22%; right:22%; height:2px;
+      border-radius:0 0 2px 2px;
+      background:var(--chip-color, var(--gold));
     }
+    .chip-em  { font-size:1.5rem; line-height:1; }
+    .chip-lbl {
+      font-family:var(--fn-en); font-size:0.58rem;
+      letter-spacing:1px; color:var(--muted); text-align:center;
+      transition:color var(--ease);
+    }
+    .gem-chip.active .chip-lbl { color:var(--gold-lt); }
+    .chip-dot {
+      width:3px; height:3px; border-radius:50%;
+      background:var(--gold); opacity:0;
+      transition:opacity .2s; position:absolute; bottom:4px;
+    }
+    .gem-chip.active .chip-dot { opacity:1; }
 
-    /* ══════════════════════════════════════
-       TOAST
-    ══════════════════════════════════════ */
+    /* ══ TOAST ══ */
     #toast-wrap {
-      position: fixed;
-      top: 80px; left: 50%;
-      transform: translateX(-50%);
-      z-index: 9000;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
+      position:fixed; top:76px; left:50%;
+      transform:translateX(-50%);
+      z-index:9000; pointer-events:none;
+      display:flex; flex-direction:column; gap:7px; align-items:center;
     }
     .toast {
-      background: rgba(8,8,20,0.92);
-      border: 1px solid var(--glass-border);
-      backdrop-filter: blur(10px);
-      border-radius: 50px;
-      padding: 8px 20px;
-      font-size: 0.84rem;
-      white-space: nowrap;
-      animation: toastIn .3s ease, toastOut .4s 2.2s forwards;
+      background:rgba(7,7,15,0.93);
+      border:1px solid var(--glass-b);
+      backdrop-filter:blur(10px); border-radius:50px;
+      padding:8px 18px; font-size:0.82rem; white-space:nowrap;
+      animation:tIn .3s ease, tOut .4s 2.2s forwards;
     }
-    @keyframes toastIn  { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes toastOut { to   { opacity:0; transform:translateY(-6px); } }
+    .toast.err { border-color:rgba(224,17,95,0.5); color:#ffb3c6; }
+    .toast.ok  { border-color:rgba(80,200,120,0.5); color:#a8f0c6; }
+    @keyframes tIn  { from{opacity:0;transform:translateY(-10px);} to{opacity:1;transform:translateY(0);} }
+    @keyframes tOut { to{opacity:0;transform:translateY(-6px);} }
 
-    /* ══════════════════════════════════════
-       AR NOT SUPPORTED BADGE
-    ══════════════════════════════════════ */
-    #no-ar-note {
-      display: none;
-      position: absolute;
-      bottom: 12px; left: 50%;
-      transform: translateX(-50%);
-      z-index: 7;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      background: rgba(8,8,20,0.7);
-      padding: 6px 14px;
-      border-radius: 50px;
-      border: 1px solid rgba(255,255,255,0.07);
-      white-space: nowrap;
+    /* ══ HTTPS WARNING ══ */
+    #https-warn {
+      display:none;
+      position:fixed; top:0; left:0; right:0; z-index:9999;
+      padding:10px 16px; text-align:center;
+      background:rgba(140,50,10,0.95); backdrop-filter:blur(10px);
+      font-size:0.8rem; color:#ffe8d6; line-height:1.6;
     }
+    #https-warn a { color:#ffd700; text-decoration:underline; }
 
-    /* ══════════════════════════════════════
-       RESPONSIVE — larger screens
-    ══════════════════════════════════════ */
-    @media (min-width: 640px) {
-      #app { flex-direction: row; flex-wrap: wrap; }
-      #topbar { width: 100%; }
-      #viewer-wrap { flex: 1; order: 2; }
-      #info-panel {
-        width: 320px;
-        order: 3;
-        flex-shrink: 0;
-      }
-      #info-card { max-height: 100%; }
-      #info-toggle { display: none; }
-      #gem-menu {
-        width: 100%;
-        order: 4;
-      }
-    }
+    /* Hidden canvas for GLB generation */
+    #gen-canvas { display:none; }
   </style>
+
 </head>
 <body>
 
+<div id="https-warn"></div>
+<canvas id="gen-canvas"></canvas>
+
 <div id="app">
 
-  <!-- ══ TOP BAR ══ -->
+  <!-- TOPBAR -->
+
   <div id="topbar">
     <div>
-      <div class="tb-logo">Gems AR</div>
-      <div class="tb-subtitle">معرض الأحجار الكريمة</div>
+      <div class="tb-logo">GEMS AR</div>
+      <div class="tb-sub">معرض الأحجار الكريمة</div>
     </div>
-
-    <div id="ar-trigger-wrap">
-      <!-- زر AR مخصص يستدعي model-viewer's AR -->
-      <button class="ar-pill" id="ar-btn" onclick="enterAR()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-        وضع AR
-      </button>
-    </div>
+    <button id="ar-btn" disabled onclick="enterAR()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2
+                 M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span id="ar-btn-txt">جارٍ التحميل…</span>
+    </button>
   </div>
 
-  <!-- ══ MODEL VIEWER STAGE ══ -->
-  <div id="viewer-wrap">
+  <!-- VIEWER -->
 
+  <div id="viewer-wrap">
     <model-viewer
       id="mv"
-      src="models/diamond.glb"
+      src=""
       alt="3D gem model"
       ar
       ar-modes="webxr scene-viewer quick-look"
       ar-scale="auto"
       camera-controls
       auto-rotate
-      auto-rotate-delay="500"
-      rotation-per-second="30deg"
-      shadow-intensity="1.2"
-      shadow-softness="0.8"
-      exposure="1.1"
+      auto-rotate-delay="800"
+      rotation-per-second="28deg"
+      shadow-intensity="1.4"
+      shadow-softness="0.85"
+      exposure="1.15"
       environment-image="neutral"
       interaction-prompt="none"
-      style="background: transparent;">
-
-      <!-- slot: custom AR button (required by model-viewer spec) -->
+      style="background:transparent;">
       <button slot="ar-button" style="display:none"></button>
-
     </model-viewer>
 
-    <!-- Loading overlay -->
-    <div class="viewer-loader" id="viewer-loader">
-      <div class="loader-ring"></div>
-      <div class="loader-text">جارٍ تحميل النموذج…</div>
-    </div>
 
-    <!-- Gem floating label -->
-    <div id="gem-float-label">
-      <div class="float-name-en" id="float-en">Diamond</div>
-      <div class="float-name-ar" id="float-ar">الماس</div>
-    </div>
-
-    <!-- Interaction hint -->
-    <div id="hint">
-      <span class="hint-icon">👆</span>
-      <span>اسحب لتدوير • انقر مرتين للتكبير</span>
-    </div>
-
-    <!-- AR not supported note -->
-    <div id="no-ar-note">⚠️ جهازك لا يدعم وضع AR</div>
-
-  </div>
-
-  <!-- ══ INFO PANEL ══ -->
-  <div id="info-panel">
-    <div id="info-toggle" onclick="toggleInfo()">
-      <div class="toggle-arrow"></div>
-    </div>
-
-    <div id="info-card">
-      <div class="card-header">
-        <div class="gem-emoji-wrap" id="c-emoji">💎</div>
-        <div class="card-titles">
-          <div class="card-name-en" id="c-en">Diamond</div>
-          <div class="card-name-ar" id="c-ar">الماس</div>
-        </div>
-      </div>
-      <p class="card-desc" id="c-desc"></p>
-      <div class="card-stats">
-        <div class="stat-box">
-          <div class="stat-lbl">صلابة موز</div>
-          <div class="stat-val" id="c-hard">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-lbl">الكثافة</div>
-          <div class="stat-val" id="c-dens">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-lbl">المنشأ</div>
-          <div class="stat-val" id="c-orig">—</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ GEM MENU ══ -->
-  <div id="gem-menu">
-    <div class="menu-scroll" id="menu-scroll">
-      <!-- Chips injected by JS -->
-    </div>
-  </div>
-
+<div id="mv-loader">
+  <div class="ring"></div>
+  <div class="loader-txt" id="loader-txt">جارٍ التهيئة…</div>
+  <div class="progress-wrap"><div id="progress-bar"></div></div>
 </div>
 
-<!-- ══ TOASTS ══ -->
+<div id="float-label">
+  <div class="fl-en" id="fl-en">—</div>
+  <div class="fl-ar" id="fl-ar">—</div>
+</div>
+
+<div id="status-badge"></div>
+
+
+  </div>
+
+  <!-- INFO PANEL -->
+
+  <div id="info-panel">
+    <div id="info-toggle" onclick="toggleInfo()"><div class="chevron"></div></div>
+    <div id="info-card">
+      <div class="c-header">
+        <div class="c-emoji" id="c-emoji">💎</div>
+        <div class="c-titles">
+          <div class="c-en" id="c-en">—</div>
+          <div class="c-ar" id="c-ar">—</div>
+        </div>
+      </div>
+      <p class="c-desc" id="c-desc"></p>
+      <div class="c-stats">
+        <div class="stat"><div class="s-lbl">صلابة موز</div><div class="s-val" id="s-hard">—</div></div>
+        <div class="stat"><div class="s-lbl">الكثافة</div>  <div class="s-val" id="s-dens">—</div></div>
+        <div class="stat"><div class="s-lbl">المنشأ</div>   <div class="s-val" id="s-orig">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GEM MENU -->
+
+  <div id="gem-menu">
+    <div class="menu-scroll" id="menu-scroll"></div>
+  </div>
+</div>
+
 <div id="toast-wrap"></div>
 
 <script>
-/* ══════════════════════════════════════════════
-   DATA — بيانات الأحجار السبعة
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   بيانات الأحجار — مع مواصفات الشكل الهندسي لكل حجر
+══════════════════════════════════════════════════ */
 const GEMS = [
   {
-    id:       'diamond',
-    nameEN:   'Diamond',
-    nameAR:   'الماس',
-    icon:     '💎',
-    color:    '#B9F2FF',
-    model:    'models/diamond.glb',
-    desc:     'أصلب مادة طبيعية معروفة على وجه الأرض، يتكوّن من ذرات الكربون المرتبة في بنية بلورية مكعبة استثنائية. رمز الخلود والفخامة عبر آلاف السنين.',
-    hardness: '10 / 10',
-    density:  '3.51 g/cm³',
-    origin:   'روسيا • أفريقيا'
+    id:'diamond', nameEN:'Diamond', nameAR:'الماس',
+    icon:'💎', color:'#B9F2FF',
+    colorHex: 0xB9F2FF,
+    metalness: 0.95, roughness: 0.02,
+    shape: 'diamond',        // بريمة الماس
+    desc:'أصلب مادة طبيعية على الأرض، يتكوّن من ذرات كربون في بنية بلورية مكعبة. رمز الخلود والفخامة.',
+    hardness:'10 / 10', density:'3.51 g/cm³', origin:'روسيا • أفريقيا'
   },
   {
-    id:       'ruby',
-    nameEN:   'Ruby',
-    nameAR:   'الياقوت',
-    icon:     '🔴',
-    color:    '#E0115F',
-    model:    'models/ruby.glb',
-    desc:     'نوع نادر من معدن الكوراندوم يكتسب لونه الأحمر الناري من أيونات الكروم. يُعدّ من أغلى وأندر الأحجار الكريمة في العالم.',
-    hardness: '9 / 10',
-    density:  '4.0 g/cm³',
-    origin:   'ميانمار • تايلاند'
+    id:'ruby', nameEN:'Ruby', nameAR:'الياقوت',
+    icon:'🔴', color:'#E0115F',
+    colorHex: 0xE0115F,
+    metalness: 0.3, roughness: 0.08,
+    shape: 'sphere',         // كرة مصقولة
+    desc:'كوراندوم نادر يكتسب لونه الأحمر الناري من أيونات الكروم. من أغلى الأحجار الكريمة في العالم.',
+    hardness:'9 / 10', density:'4.0 g/cm³', origin:'ميانمار • تايلاند'
   },
   {
-    id:       'emerald',
-    nameEN:   'Emerald',
-    nameAR:   'الزمرد',
-    icon:     '💚',
-    color:    '#50C878',
-    model:    'models/emerald.glb',
-    desc:     'جوهرة خضراء ساحرة من مجموعة البيريل، تستمد لونها الأخضر الزاهي من الكروم والفاناديوم. يُطلق الخبراء على شوائبها الطبيعية اسم "الحديقة".',
-    hardness: '7.5 – 8',
-    density:  '2.76 g/cm³',
-    origin:   'كولومبيا • زامبيا'
+    id:'emerald', nameEN:'Emerald', nameAR:'الزمرد',
+    icon:'💚', color:'#50C878',
+    colorHex: 0x50C878,
+    metalness: 0.4, roughness: 0.06,
+    shape: 'emerald',        // مستطيل مشطوف
+    desc:'جوهرة خضراء من مجموعة البيريل، تستمد لونها من الكروم. شوائبها الطبيعية تُعرف بـ"الحديقة".',
+    hardness:'7.5 – 8', density:'2.76 g/cm³', origin:'كولومبيا • زامبيا'
   },
   {
-    id:       'topaz',
-    nameEN:   'Topaz',
-    nameAR:   'التوباز',
-    icon:     '🔷',
-    color:    '#48CAE4',
-    model:    'models/topaz.glb',
-    desc:     'معدن سيليكات الألومنيوم والفلور، يتوفر بطيف واسع من الألوان. أندر أنواعه هو "Imperial Topaz" ذو اللون البرتقالي الذهبي النادر.',
-    hardness: '8 / 10',
-    density:  '3.5 g/cm³',
-    origin:   'البرازيل • باكستان'
+    id:'topaz', nameEN:'Topaz', nameAR:'التوباز',
+    icon:'🔷', color:'#48CAE4',
+    colorHex: 0x48CAE4,
+    metalness: 0.5, roughness: 0.04,
+    shape: 'octahedron',     // ثماني الوجوه
+    desc:'معدن سيليكات الألومنيوم يتوفر بألوان متعددة. أندره "Imperial Topaz" ذو اللون البرتقالي.',
+    hardness:'8 / 10', density:'3.5 g/cm³', origin:'البرازيل • باكستان'
   },
   {
-    id:       'agate',
-    nameEN:   'Agate',
-    nameAR:   'العقيق',
-    icon:     '🟤',
-    color:    '#D4956A',
-    model:    'models/agate.glb',
-    desc:     'نوع فريد من الكوارتز الدقيق الحبيبات يتميز بنطاقاته اللونية المذهلة. استُخدم في صنع الأختام والحلي منذ آلاف السنين في الحضارات القديمة.',
-    hardness: '6.5 – 7',
-    density:  '2.6 g/cm³',
-    origin:   'اليمن • البرازيل'
+    id:'agate', nameEN:'Agate', nameAR:'العقيق',
+    icon:'🟤', color:'#D4956A',
+    colorHex: 0xD4956A,
+    metalness: 0.15, roughness: 0.25,
+    shape: 'torus',          // دائري
+    desc:'كوارتز فريد يتميز بنطاقاته اللونية المذهلة. استُخدم في الأختام والحلي منذ آلاف السنين.',
+    hardness:'6.5 – 7', density:'2.6 g/cm³', origin:'اليمن • البرازيل'
   },
   {
-    id:       'gold',
-    nameEN:   'Gold',
-    nameAR:   'الذهب',
-    icon:     '🥇',
-    color:    '#FFD700',
-    model:    'models/gold.glb',
-    desc:     'معدن ثمين خالد عُرف منذ فجر الحضارة، يتميز بمقاومته الفائقة للتآكل ولمعانه الأبدي. شكّل عبر التاريخ أساس الاقتصاد العالمي واحتياطيات البنوك المركزية.',
-    hardness: '2.5 / 10',
-    density:  '19.3 g/cm³',
-    origin:   'جنوب أفريقيا • الصين'
+    id:'gold', nameEN:'Gold', nameAR:'الذهب',
+    icon:'🥇', color:'#FFD700',
+    colorHex: 0xFFD700,
+    metalness: 1.0, roughness: 0.05,
+    shape: 'bar',            // سبيكة ذهبية
+    desc:'معدن ثمين خالد يتميز بمقاومته الفائقة للتآكل. شكّل أساس الاقتصاد العالمي عبر التاريخ.',
+    hardness:'2.5 / 10', density:'19.3 g/cm³', origin:'جنوب أفريقيا • الصين'
   },
   {
-    id:       'silver',
-    nameEN:   'Silver',
-    nameAR:   'الفضة',
-    icon:     '🥈',
-    color:    '#C8C8D0',
-    model:    'models/silver.glb',
-    desc:     'يتربع الفضة على عرش الموصلات الكهربائية والحرارية بين جميع المعادن. يُستخدم على نطاق واسع في المجوهرات والعملات والإلكترونيات والأجهزة الطبية.',
-    hardness: '2.7 / 10',
-    density:  '10.5 g/cm³',
-    origin:   'المكسيك • البيرو'
+    id:'silver', nameEN:'Silver', nameAR:'الفضة',
+    icon:'🥈', color:'#C8C8D0',
+    colorHex: 0xC8C8E0,
+    metalness: 1.0, roughness: 0.08,
+    shape: 'sphere',         // كرة فضية
+    desc:'أعلى معدن في توصيل الكهرباء والحرارة. يُستخدم في المجوهرات والإلكترونيات والطب.',
+    hardness:'2.7 / 10', density:'10.5 g/cm³', origin:'المكسيك • البيرو'
   }
 ];
 
-/* ══════════════════════════════════════════════
-   STATE
-══════════════════════════════════════════════ */
-let activeIndex = 0;
+/* ══════════════════════════════════════════════════
+   مولّد نماذج GLB بـ Three.js
+══════════════════════════════════════════════════ */
+function buildGeometry(shape) {
+  switch(shape) {
+    case 'diamond': {
+      // شكل الماس = مخروطان متصلان
+      const pts = [];
+      pts.push(new THREE.Vector2(0, -0.6));       // أسفل نقطة
+      pts.push(new THREE.Vector2(0.38, -0.15));
+      pts.push(new THREE.Vector2(0.45, 0.05));
+      pts.push(new THREE.Vector2(0.38, 0.2));
+      pts.push(new THREE.Vector2(0.18, 0.35));
+      pts.push(new THREE.Vector2(0, 0.38));
+      return new THREE.LatheGeometry(pts, 8);
+    }
+    case 'sphere':
+      return new THREE.SphereGeometry(0.5, 32, 32);
+    case 'emerald': {
+      // مستطيل مشطوف (ChamferBox محاكاة)
+      const geo = new THREE.BoxGeometry(0.7, 1.0, 0.5, 2, 2, 2);
+      return geo;
+    }
+    case 'octahedron':
+      return new THREE.OctahedronGeometry(0.55, 2);
+    case 'torus':
+      return new THREE.TorusGeometry(0.4, 0.2, 16, 40);
+    case 'bar':
+      return new THREE.BoxGeometry(1.1, 0.35, 0.65);
+    default:
+      return new THREE.SphereGeometry(0.5, 24, 24);
+  }
+}
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════
+   تحويل Geometry → GLB (Base64)
+   نستخدم GLB بصيغة glTF 2.0 الثنائية يدوياً
+══════════════════════════════════════════════════ */
+async function gemToGLB(gem) {
+  return new Promise((resolve) => {
+    // Three.js scene مؤقت
+    const scene    = new THREE.Scene();
+    const geometry = buildGeometry(gem.shape);
+    const material = new THREE.MeshStandardMaterial({
+      color:      gem.colorHex,
+      metalness:  gem.metalness,
+      roughness:  gem.roughness,
+      envMapIntensity: 1.2,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    // استخدام GLTFExporter من Three.js r128
+    // نبني الـ GLB يدوياً بدون exporter (أبسط وأموثق)
+    // نستخدم طريقة بديلة: نُصدّر geometry كـ JSON ثم نحوّلها
+    
+    // بناء GLB يدوياً بـ glTF 2.0
+    const glb = buildGLBFromGeometry(geometry, gem.colorHex, gem.metalness, gem.roughness);
+    const blob = new Blob([glb], { type: 'model/gltf-binary' });
+    const url  = URL.createObjectURL(blob);
+    resolve(url);
+  });
+}
+
+/* بناء GLB ثنائي يدوياً */
+function buildGLBFromGeometry(geometry, colorHex, metalness, roughness) {
+  geometry.computeVertexNormals();
+
+  const positions = geometry.attributes.position;
+  const normals   = geometry.attributes.normal;
+  const indices   = geometry.index;
+
+  // استخراج البيانات
+  const posArr = new Float32Array(positions.count * 3);
+  const nrmArr = new Float32Array(normals.count * 3);
+  for (let i = 0; i < positions.count; i++) {
+    posArr[i*3+0] = positions.getX(i);
+    posArr[i*3+1] = positions.getY(i);
+    posArr[i*3+2] = positions.getZ(i);
+    nrmArr[i*3+0] = normals.getX(i);
+    nrmArr[i*3+1] = normals.getY(i);
+    nrmArr[i*3+2] = normals.getZ(i);
+  }
+
+  let idxArr = null;
+  if (indices) {
+    idxArr = indices.count <= 65535
+      ? new Uint16Array(indices.array)
+      : new Uint32Array(indices.array);
+  }
+
+  // حساب bounding box للـ accessor min/max
+  let minPos = [Infinity,Infinity,Infinity];
+  let maxPos = [-Infinity,-Infinity,-Infinity];
+  for (let i = 0; i < posArr.length; i+=3) {
+    minPos[0] = Math.min(minPos[0], posArr[i]);
+    minPos[1] = Math.min(minPos[1], posArr[i+1]);
+    minPos[2] = Math.min(minPos[2], posArr[i+2]);
+    maxPos[0] = Math.max(maxPos[0], posArr[i]);
+    maxPos[1] = Math.max(maxPos[1], posArr[i+1]);
+    maxPos[2] = Math.max(maxPos[2], posArr[i+2]);
+  }
+
+  // اللون → vec3 normalized
+  const r = ((colorHex >> 16) & 0xff) / 255;
+  const g = ((colorHex >> 8)  & 0xff) / 255;
+  const b = (colorHex & 0xff) / 255;
+
+  // ── بناء Buffer ──
+  const align4 = (n) => Math.ceil(n / 4) * 4;
+
+  const idxByteLen  = idxArr ? align4(idxArr.byteLength) : 0;
+  const posByteLen  = align4(posArr.byteLength);
+  const nrmByteLen  = align4(nrmArr.byteLength);
+  const totalBufLen = idxByteLen + posByteLen + nrmByteLen;
+
+  const binBuf = new ArrayBuffer(totalBufLen);
+  const binView = new Uint8Array(binBuf);
+
+  let offset = 0;
+  const idxOffset = offset;
+  if (idxArr) { binView.set(new Uint8Array(idxArr.buffer, 0, idxArr.byteLength), offset); offset += idxByteLen; }
+  const posOffset = offset;
+  binView.set(new Uint8Array(posArr.buffer), offset); offset += posByteLen;
+  const nrmOffset = offset;
+  binView.set(new Uint8Array(nrmArr.buffer), offset); offset += nrmByteLen;
+
+  // ── JSON chunk ──
+  const accessors = [];
+  const bufferViews = [];
+  let bvIdx = 0;
+
+  // index accessor (إن وُجد)
+  let idxAccessorIdx = -1;
+  if (idxArr) {
+    bufferViews.push({ buffer:0, byteOffset:idxOffset, byteLength:idxArr.byteLength, target:34963 });
+    accessors.push({
+      bufferView: bvIdx++,
+      byteOffset: 0,
+      componentType: idxArr instanceof Uint16Array ? 5123 : 5125,
+      count: idxArr.length,
+      type: 'SCALAR',
+      min: [0], max: [positions.count - 1]
+    });
+    idxAccessorIdx = accessors.length - 1;
+  }
+
+  // position accessor
+  bufferViews.push({ buffer:0, byteOffset:posOffset, byteLength:posArr.byteLength, byteStride:12, target:34962 });
+  accessors.push({
+    bufferView: bvIdx++,
+    byteOffset: 0,
+    componentType: 5126,
+    count: positions.count,
+    type: 'VEC3',
+    min: minPos, max: maxPos
+  });
+  const posAccessorIdx = accessors.length - 1;
+
+  // normal accessor
+  bufferViews.push({ buffer:0, byteOffset:nrmOffset, byteLength:nrmArr.byteLength, byteStride:12, target:34962 });
+  accessors.push({
+    bufferView: bvIdx++,
+    byteOffset: 0,
+    componentType: 5126,
+    count: normals.count,
+    type: 'VEC3',
+    min: [-1,-1,-1], max: [1,1,1]
+  });
+  const nrmAccessorIdx = accessors.length - 1;
+
+  const primitive = {
+    attributes: { POSITION: posAccessorIdx, NORMAL: nrmAccessorIdx },
+    material: 0, mode: 4
+  };
+  if (idxAccessorIdx >= 0) primitive.indices = idxAccessorIdx;
+
+  const gltfJSON = {
+    asset: { version: '2.0', generator: 'GemAR-Builder' },
+    scene: 0,
+    scenes: [{ nodes: [0] }],
+    nodes: [{ mesh: 0, name: 'gem' }],
+    meshes: [{
+      name: 'gem',
+      primitives: [primitive]
+    }],
+    materials: [{
+      name: 'gemMat',
+      pbrMetallicRoughness: {
+        baseColorFactor: [r, g, b, 1.0],
+        metallicFactor:  metalness,
+        roughnessFactor: roughness
+      },
+      doubleSided: true
+    }],
+    accessors,
+    bufferViews,
+    buffers: [{ byteLength: totalBufLen }]
+  };
+
+  const jsonStr    = JSON.stringify(gltfJSON);
+  const jsonBytes  = new TextEncoder().encode(jsonStr);
+  const jsonPad    = align4(jsonBytes.length);
+  const jsonChunk  = new Uint8Array(jsonPad); jsonChunk.set(jsonBytes);
+  // padding با مسافات (0x20)
+  for (let i = jsonBytes.length; i < jsonPad; i++) jsonChunk[i] = 0x20;
+
+  const binPad    = align4(totalBufLen);
+  const binChunk  = new Uint8Array(binPad);
+  binChunk.set(new Uint8Array(binBuf));
+
+  // GLB header: magic(4) + version(4) + length(4) = 12
+  // JSON chunk header: length(4) + type(4) = 8
+  // BIN chunk header:  length(4) + type(4) = 8
+  const totalLen = 12 + 8 + jsonPad + 8 + binPad;
+  const out = new ArrayBuffer(totalLen);
+  const dv  = new DataView(out);
+  let p = 0;
+
+  // GLB header
+  dv.setUint32(p, 0x46546C67, true); p+=4; // magic 'glTF'
+  dv.setUint32(p, 2, true);           p+=4; // version
+  dv.setUint32(p, totalLen, true);    p+=4; // total length
+
+  // JSON chunk
+  dv.setUint32(p, jsonPad, true); p+=4;
+  dv.setUint32(p, 0x4E4F534A, true); p+=4; // 'JSON'
+  new Uint8Array(out, p, jsonPad).set(jsonChunk); p += jsonPad;
+
+  // BIN chunk
+  dv.setUint32(p, binPad, true); p+=4;
+  dv.setUint32(p, 0x004E4942, true); p+=4; // 'BIN\0'
+  new Uint8Array(out, p, binPad).set(binChunk); p += binPad;
+
+  return out;
+}
+
+/* ══════════════════════════════════════════════════
    ELEMENTS
-══════════════════════════════════════════════ */
-const mv           = document.getElementById('mv');
-const loader       = document.getElementById('viewer-loader');
-const floatEN      = document.getElementById('float-en');
-const floatAR      = document.getElementById('float-ar');
-const cEmoji       = document.getElementById('c-emoji');
-const cEN          = document.getElementById('c-en');
-const cAR          = document.getElementById('c-ar');
-const cDesc        = document.getElementById('c-desc');
-const cHard        = document.getElementById('c-hard');
-const cDens        = document.getElementById('c-dens');
-const cOrig        = document.getElementById('c-orig');
-const menuScroll   = document.getElementById('menu-scroll');
-const noArNote     = document.getElementById('no-ar-note');
+══════════════════════════════════════════════════ */
+const mv          = document.getElementById('mv');
+const mvLoader    = document.getElementById('mv-loader');
+const loaderTxt   = document.getElementById('loader-txt');
+const progressBar = document.getElementById('progress-bar');
+const flEN        = document.getElementById('fl-en');
+const flAR        = document.getElementById('fl-ar');
+const arBtn       = document.getElementById('ar-btn');
+const arBtnTxt    = document.getElementById('ar-btn-txt');
+const statusBadge = document.getElementById('status-badge');
 
-/* ══════════════════════════════════════════════
+let activeIdx   = 0;
+let modelLoaded = false;
+// كاش روابط الـ GLB لتفادي إعادة التوليد
+const glbCache  = {};
+
+/* ══════════════════════════════════════════════════
+   HTTPS CHECK
+══════════════════════════════════════════════════ */
+(function checkHTTPS() {
+  const isSecure = location.protocol === 'https:'
+                || location.hostname === 'localhost'
+                || location.hostname === '127.0.0.1';
+  if (!isSecure) {
+    const warn = document.getElementById('https-warn');
+    warn.style.display = 'block';
+    warn.innerHTML =
+      '⚠️ وضع AR يحتاج <strong>HTTPS</strong> — '
+      + 'ارفع المشروع على '
+      + '<a href="https://pages.github.com" target="_blank">GitHub Pages</a>'
+      + ' أو Netlify';
+  }
+})();
+
+/* STATUS */
+let _statusT;
+function showStatus(msg) {
+  statusBadge.textContent = msg;
+  statusBadge.classList.add('show');
+  clearTimeout(_statusT);
+  _statusT = setTimeout(() => statusBadge.classList.remove('show'), 5000);
+}
+
+/* ══════════════════════════════════════════════════
    BUILD MENU
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════ */
 function buildMenu() {
+  const scroll = document.getElementById('menu-scroll');
   GEMS.forEach((gem, i) => {
     const chip = document.createElement('div');
     chip.className = 'gem-chip' + (i === 0 ? ' active' : '');
     chip.style.setProperty('--chip-color', gem.color);
-    chip.dataset.index = i;
     chip.innerHTML = `
-      <span class="chip-emoji">${gem.icon}</span>
-      <span class="chip-name-en">${gem.nameEN}</span>
-      <span class="chip-dot"></span>
-    `;
+      <span class="chip-em">${gem.icon}</span>
+      <span class="chip-lbl">${gem.nameEN}</span>
+      <span class="chip-dot"></span>`;
     chip.addEventListener('click', () => selectGem(i));
-    menuScroll.appendChild(chip);
+    scroll.appendChild(chip);
   });
 }
 
-/* ══════════════════════════════════════════════
-   SELECT GEM
-══════════════════════════════════════════════ */
-function selectGem(index) {
-  if (index === activeIndex) return;
-  activeIndex = index;
-  const gem = GEMS[index];
+/* ══════════════════════════════════════════════════
+   SELECT GEM — يولّد GLB ويُعرضه
+══════════════════════════════════════════════════ */
+async function selectGem(idx) {
+  if (idx === activeIdx && modelLoaded) return;
+  activeIdx   = idx;
+  modelLoaded = false;
 
-  // Update menu chips
+  const gem = GEMS[idx];
+
+  // chips UI
   document.querySelectorAll('.gem-chip').forEach((c, i) => {
-    c.classList.toggle('active', i === index);
+    c.classList.toggle('active', i === idx);
     c.style.setProperty('--chip-color', GEMS[i].color);
   });
+  document.getElementById('menu-scroll').children[idx]
+    .scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
 
-  // Scroll chip into view
-  const chip = menuScroll.children[index];
-  chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  // أعطل زر AR
+  arBtn.disabled       = true;
+  arBtnTxt.textContent = 'جارٍ التحميل…';
 
-  // Show loader
-  loader.classList.remove('hidden');
+  // loader
+  mvLoader.classList.remove('hidden');
+  loaderTxt.textContent = gem.nameAR;
+  progressBar.style.width = '0%';
 
-  // Update model
-  mv.src = gem.model;
+  // float label
+  flEN.textContent      = gem.nameEN;
+  flEN.style.color      = gem.color;
+  flEN.style.textShadow = 0 0 28px ${gem.color}66;
+  flAR.textContent      = gem.nameAR;
 
-  // Update floating label
-  floatEN.textContent = gem.nameEN;
-  floatEN.style.color = gem.color;
-  floatEN.style.textShadow = `0 0 30px ${gem.color}66`;
-  floatAR.textContent = gem.nameAR;
+  // info card
+  document.getElementById('c-emoji').textContent      = gem.icon;
+  document.getElementById('c-emoji').style.background = gem.color + '22';
+  document.getElementById('c-emoji').style.boxShadow  = 0 0 18px ${gem.color}44;
+  document.getElementById('c-en').textContent   = gem.nameEN;
+  document.getElementById('c-ar').textContent   = gem.nameAR;
+  document.getElementById('c-desc').textContent = gem.desc;
+  document.getElementById('s-hard').textContent = gem.hardness;
+  document.getElementById('s-dens').textContent = gem.density;
+  document.getElementById('s-orig').textContent = gem.origin;
+  document.getElementById('s-hard').style.color = gem.color;
+  document.getElementById('info-card').style.borderTopColor = gem.color + '50';
 
-  // Update info card
-  cEmoji.textContent      = gem.icon;
-  cEmoji.style.background = gem.color + '22';
-  cEmoji.style.boxShadow  = `0 0 20px ${gem.color}44`;
-  cEN.textContent    = gem.nameEN;
-  cAR.textContent    = gem.nameAR;
-  cDesc.textContent  = gem.desc;
-  cHard.textContent  = gem.hardness;
-  cDens.textContent  = gem.density;
-  cOrig.textContent  = gem.origin;
-  cHard.style.color  = gem.color;
+  toast(✦ ${gem.nameAR});
 
-  // Info card border accent
-  document.getElementById('info-card').style.borderTopColor = gem.color + '55';
+  // توليد GLB (من الكاش إن وُجد)
+  progressBar.style.width = '30%';
+  if (!glbCache[gem.id]) {
+    glbCache[gem.id] = await gemToGLB(gem);
+  }
+  progressBar.style.width = '70%';
 
-  toast(`✦ ${gem.nameAR}`);
+  // تعيين الـ src
+  mv.src = glbCache[gem.id];
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════
    MODEL VIEWER EVENTS
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════ */
+mv.addEventListener('progress', (e) => {
+  const pct = Math.round(e.detail.totalProgress * 100);
+  progressBar.style.width = Math.max(70, pct) + '%';
+});
+
 mv.addEventListener('load', () => {
-  loader.classList.add('hidden');
-});
+  modelLoaded = true;
+  mvLoader.classList.add('hidden');
+  progressBar.style.width = '100%';
 
-mv.addEventListener('error', () => {
-  loader.classList.add('hidden');
-  toast('⚠️ تعذر تحميل النموذج', true);
-});
-
-// Check AR support
-mv.addEventListener('ar-status', (e) => {
-  if (e.detail.status === 'not-presenting') {
-    toast('✦ مرحباً بعودتك');
+  if (mv.canActivateAR) {
+    arBtn.disabled       = false;
+    arBtnTxt.textContent = 'وضع AR';
+    showStatus('✓ النموذج جاهز — AR متاح');
+  } else {
+    arBtn.disabled       = true;
+    arBtnTxt.textContent = 'AR غير مدعوم';
+    showStatus('⚠️ AR يحتاج HTTPS + موبايل متوافق');
   }
 });
 
-/* ══════════════════════════════════════════════
+mv.addEventListener('error', (e) => {
+  console.error('model-viewer error:', e);
+  mvLoader.classList.add('hidden');
+  arBtn.disabled       = true;
+  arBtnTxt.textContent = 'خطأ';
+  toast('⚠️ تعذّر تحميل النموذج', 'err');
+  showStatus('✗ خطأ في التحميل — تحقق من Console');
+});
+
+mv.addEventListener('ar-status', (e) => {
+  const st = e.detail.status;
+  if (st === 'session-started') toast('✓ وضع AR نشط', 'ok');
+  if (st === 'not-presenting') {
+    toast('← خرجت من AR');
+    arBtn.disabled       = false;
+    arBtnTxt.textContent = 'وضع AR';
+  }
+  if (st === 'failed') {
+    toast('⚠️ فشل AR — تحقق من HTTPS والجهاز', 'err');
+    arBtn.disabled       = false;
+    arBtnTxt.textContent = 'وضع AR';
+  }
+});
+
+/* ══════════════════════════════════════════════════
    ENTER AR
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════ */
 function enterAR() {
+  if (!modelLoaded) { toast('⚠️ انتظر اكتمال التحميل', 'err'); return; }
   if (!mv.canActivateAR) {
-    noArNote.style.display = 'block';
-    setTimeout(() => { noArNote.style.display = 'none'; }, 3000);
-    toast('⚠️ AR غير مدعوم على هذا الجهاز', true);
+    const isHTTPS  = location.protocol === 'https:' || location.hostname === 'localhost';
+    const isMobile = /android|iphone|ipad/i.test(navigator.userAgent);
+    if (!isHTTPS)   toast('⚠️ يحتاج HTTPS — ارفع على GitHub Pages', 'err');
+    else if (!isMobile) toast('⚠️ AR يعمل على الموبايل فقط', 'err');
+    else toast('⚠️ جهازك لا يدعم ARCore / AR Quick Look', 'err');
     return;
   }
   mv.activateAR();
 }
 
-/* ══════════════════════════════════════════════
-   TOGGLE INFO PANEL
-══════════════════════════════════════════════ */
+/* TOGGLE INFO */
 function toggleInfo() {
   document.getElementById('info-panel').classList.toggle('collapsed');
 }
 
-/* ══════════════════════════════════════════════
-   TOAST
-══════════════════════════════════════════════ */
-function toast(msg, isErr = false) {
-  const wrap = document.getElementById('toast-wrap');
-  const el   = document.createElement('div');
-  el.className   = 'toast';
+/* TOAST */
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
   el.textContent = msg;
-  if (isErr) el.style.borderColor = 'rgba(224,17,95,0.5)';
-  wrap.appendChild(el);
-  setTimeout(() => el.remove(), 2800);
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(() => el.remove(), 2900);
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════
    INIT
-══════════════════════════════════════════════ */
-function init() {
-  buildMenu();
-
-  // Populate info card with first gem
-  const gem = GEMS[0];
-  floatEN.textContent    = gem.nameEN;
-  floatEN.style.color    = gem.color;
-  floatAR.textContent    = gem.nameAR;
-  cEmoji.textContent     = gem.icon;
-  cEmoji.style.background = gem.color + '22';
-  cEN.textContent   = gem.nameEN;
-  cAR.textContent   = gem.nameAR;
-  cDesc.textContent = gem.desc;
-  cHard.textContent = gem.hardness;
-  cDens.textContent = gem.density;
-  cOrig.textContent = gem.origin;
-  cHard.style.color = gem.color;
-  document.getElementById('info-card').style.borderTopColor = gem.color + '55';
-}
-
-init();
+══════════════════════════════════════════════════ */
+buildMenu();
+selectGem(0);
 </script>
+
 </body>
 </html>
