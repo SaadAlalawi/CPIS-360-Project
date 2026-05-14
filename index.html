@@ -8,6 +8,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
   <style>
     :root {
       --gold:#D4AF37;--gold-lt:#F5D76E;--gold-dim:rgba(212,175,55,0.14);
@@ -186,6 +194,60 @@
       padding:10px 16px;text-align:center;background:rgba(140,50,10,0.95);
       backdrop-filter:blur(10px);font-size:0.8rem;color:#ffe8d6;line-height:1.6}
     #https-warn a{color:#ffd700;text-decoration:underline}
+
+    /* HOTSPOTS (work inside model-viewer + during AR) */
+    .hotspot{
+      --hs-color:var(--gold);
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      background:rgba(7,7,15,0.86);backdrop-filter:blur(10px);
+      border:1px solid rgba(212,175,55,0.45);border-radius:18px;
+      padding:5px 11px;cursor:pointer;color:var(--gold-lt);
+      font-family:var(--fn-ar);box-shadow:0 0 16px rgba(212,175,55,0.30);
+      pointer-events:auto;transition:transform .18s,box-shadow .25s;white-space:nowrap}
+    .hotspot:hover{transform:scale(1.06);box-shadow:0 0 22px rgba(212,175,55,0.50)}
+    .hotspot:active{transform:scale(0.92)}
+    .hotspot[data-visibility-attribute="visible"]:not([data-visible]){opacity:0.4}
+    .hs-icon{font-size:1rem;line-height:1}
+    .hs-lbl{font-size:0.56rem;letter-spacing:1px;color:var(--muted)}
+    .hotspot.gem-tag{--hs-color:var(--chip,var(--gold));
+      border-color:var(--chip,rgba(212,175,55,0.45));
+      box-shadow:0 0 16px var(--chip-glow,rgba(212,175,55,0.30))}
+    .hotspot.gem-tag .hs-lbl{color:var(--chip,var(--gold-lt))}
+
+    /* PULSE animation for the floating label when glow is triggered */
+    @keyframes glowPulse{
+      0%,100%{filter:brightness(1) saturate(1)}
+      50%{filter:brightness(1.8) saturate(1.6) drop-shadow(0 0 24px currentColor)}
+    }
+    .fl-en.glowing{animation:glowPulse 1.2s ease-in-out}
+
+    /* In-AR HUD (shows during AR session) */
+    #ar-hud{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);
+      z-index:30;display:flex;gap:8px;align-items:center;
+      background:rgba(7,7,15,0.78);backdrop-filter:blur(14px);
+      border:1px solid var(--glass-b);border-radius:50px;
+      padding:6px 8px;pointer-events:auto;opacity:0;visibility:hidden;
+      transition:opacity .35s,visibility .35s,transform .35s;
+      transform:translateX(-50%) translateY(20px)}
+    #ar-hud.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+    .hud-btn{display:flex;align-items:center;justify-content:center;
+      width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;
+      background:var(--gold-dim);color:var(--gold-lt);font-size:0.95rem;
+      transition:background .2s,transform .15s}
+    .hud-btn:hover{background:rgba(212,175,55,0.32)}
+    .hud-btn:active{transform:scale(0.9)}
+    .hud-label{padding:0 12px;font-size:0.76rem;color:var(--gold-lt);
+      letter-spacing:1px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    /* Multi-AR merge progress */
+    #merge-overlay{position:absolute;inset:0;z-index:9;
+      display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+      background:rgba(7,7,15,0.82);backdrop-filter:blur(12px)}
+    #merge-overlay.show{display:flex}
+    .merge-title{font-family:var(--fn-en);font-size:0.95rem;letter-spacing:3px;color:var(--gold)}
+    .merge-sub{font-size:0.76rem;color:var(--muted)}
+    .merge-icons{display:flex;gap:14px;font-size:2rem;align-items:center}
+    .merge-icons .plus{color:var(--muted);font-size:1.1rem;opacity:0.5}
   </style>
 </head>
 <body>
@@ -225,7 +287,40 @@
       environment-image="neutral" interaction-prompt="auto"
       style="background:transparent;">
       <button slot="ar-button" style="display:none"></button>
+
+      <!-- HOTSPOTS (visible in viewer AND during WebXR AR) -->
+      <button class="hotspot" slot="hotspot-info"
+              data-position="0 0.45 0" data-normal="0 1 0"
+              data-visibility-attribute="visible">
+        <span class="hs-icon">ℹ</span><span class="hs-lbl">معلومات</span>
+      </button>
+      <button class="hotspot" slot="hotspot-cycle"
+              data-position="0.55 0 0" data-normal="1 0 0"
+              data-visibility-attribute="visible">
+        <span class="hs-icon">↻</span><span class="hs-lbl">تبديل</span>
+      </button>
+      <button class="hotspot" slot="hotspot-glow"
+              data-position="-0.55 0 0" data-normal="-1 0 0"
+              data-visibility-attribute="visible">
+        <span class="hs-icon">✨</span><span class="hs-lbl">توهج</span>
+      </button>
+
+      <!-- AR HUD: shown during AR sessions -->
+      <div id="ar-hud">
+        <button class="hud-btn" id="hud-prev" title="السابق">‹</button>
+        <div class="hud-label" id="hud-label">—</div>
+        <button class="hud-btn" id="hud-next" title="التالي">›</button>
+        <button class="hud-btn" id="hud-glow" title="توهج">✨</button>
+      </div>
     </model-viewer>
+
+    <!-- Merge overlay (multi-AR build progress) -->
+    <div id="merge-overlay">
+      <div class="merge-title">DAMJ AR</div>
+      <div class="merge-icons" id="merge-icons"></div>
+      <div class="ring"></div>
+      <div class="merge-sub" id="merge-sub">جارٍ دمج النماذج…</div>
+    </div>
 
     <div id="mv-loader">
       <div class="ring"></div>
@@ -244,10 +339,10 @@
     <!-- MULTI AR PANEL -->
     <div id="multi-panel">
       <div class="mp-title">AR متعدد</div>
-      <div class="mp-sub">اختر الأحجار التي تريد وضعها معاً</div>
+      <div class="mp-sub">اختر الأحجار التي تريد دمجها في مشهد واحد</div>
       <div class="mp-grid" id="mp-grid"></div>
       <div class="mp-count" id="mp-count">لم تختر بعد</div>
-      <div class="mp-note">✦ ستُوضع الأحجار المختارة بجانب بعضها في غرفتك عبر AR</div>
+      <div class="mp-note">✦ النماذج المختارة ستُدمج فعلياً جنباً إلى جنب في مشهد AR واحد قابل للتفاعل</div>
       <div class="mp-actions">
         <button class="btn" onclick="closeMultiPanel()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -290,7 +385,109 @@
 
 <div id="toast-wrap"></div>
 
-<script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+/* ── Helpers: ArrayBuffer → base64 data URL ── */
+function ab2b64(buf){
+  const u8=new Uint8Array(buf); let s='';
+  const CHUNK=0x8000;
+  for(let i=0;i<u8.length;i+=CHUNK){
+    s+=String.fromCharCode.apply(null,u8.subarray(i,i+CHUNK));
+  }
+  return btoa(s);
+}
+function glbToDataURL(buf){return 'data:model/gltf-binary;base64,'+ab2b64(buf)}
+
+function exportToGLB(object){
+  return new Promise((resolve,reject)=>{
+    const exporter=new GLTFExporter();
+    exporter.parse(object,(result)=>{
+      if(result instanceof ArrayBuffer) resolve(glbToDataURL(result));
+      else reject(new Error('Expected binary GLB'));
+    },(err)=>reject(err),{binary:true});
+  });
+}
+
+const _loader=new GLTFLoader();
+function loadGLB(url){
+  return new Promise((resolve,reject)=>_loader.load(url,(g)=>resolve(g.scene),undefined,reject));
+}
+
+/* ── Build a procedural Silver Ingot (chamfered bar) ── */
+function makeSilverIngot(){
+  const w=0.55,h=0.20,r=0.06;
+  const shape=new THREE.Shape();
+  shape.moveTo(-w+r,-h);
+  shape.lineTo(w-r,-h);
+  shape.quadraticCurveTo(w,-h,w,-h+r);
+  shape.lineTo(w,h-r);
+  shape.quadraticCurveTo(w,h,w-r,h);
+  shape.lineTo(-w+r,h);
+  shape.quadraticCurveTo(-w,h,-w,h-r);
+  shape.lineTo(-w,-h+r);
+  shape.quadraticCurveTo(-w,-h,-w+r,-h);
+  const geom=new THREE.ExtrudeGeometry(shape,{
+    depth:0.30,bevelEnabled:true,
+    bevelThickness:0.045,bevelSize:0.045,bevelSegments:5,
+    steps:1,curveSegments:14
+  });
+  geom.center(); geom.computeVertexNormals();
+  // Lay flat on its broad side and tilt forward a touch
+  geom.rotateX(-Math.PI/2);
+  geom.rotateY(Math.PI/14);
+  const mat=new THREE.MeshStandardMaterial({
+    color:0xEDEDF2, metalness:1.0, roughness:0.16,
+  });
+  return new THREE.Mesh(geom,mat);
+}
+
+async function buildSilverGLB(){
+  const scene=new THREE.Scene();
+  scene.add(makeSilverIngot());
+  return await exportToGLB(scene);
+}
+
+/* ── Merge selected gems into one side-by-side GLB ── */
+async function buildMergedGLB(ids){
+  const root=new THREE.Group();
+  const spacing=0.55;
+  const targetSize=0.35;
+  const positions=[];
+
+  for(let i=0;i<ids.length;i++){
+    const id=ids[i];
+    const dataUrl=GEM_GLB[id];
+    if(!dataUrl) continue;
+    let scene;
+    try{ scene=await loadGLB(dataUrl); }
+    catch(err){ console.warn('skip',id,err); continue; }
+
+    // Normalize scale via bounding box
+    const box=new THREE.Box3().setFromObject(scene);
+    const size=new THREE.Vector3(); box.getSize(size);
+    const maxDim=Math.max(size.x,size.y,size.z)||1;
+    scene.scale.setScalar(targetSize/maxDim);
+
+    // Recenter at origin
+    const nbox=new THREE.Box3().setFromObject(scene);
+    const center=new THREE.Vector3(); nbox.getCenter(center);
+    scene.position.sub(center);
+
+    // Lay out on x-axis
+    const xPos=(i-(ids.length-1)/2)*spacing;
+    scene.position.x+=xPos;
+    scene.name='gem_'+id;
+    positions.push({id,x:xPos});
+    root.add(scene);
+  }
+  const dataUrl=await exportToGLB(root);
+  return {dataUrl,positions};
+}
+
+/* ── Existing data: GEM_GLB + GEMS ── */
 const GEM_GLB = {
   diamond: "data:model/gltf-binary;base64,Z2xURgIAAABkKgAA5AMAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAifSwic2NlbmUiOjAsInNjZW5lcyI6W3sibm9kZXMiOlswXX1dLCJub2RlcyI6W3sibWVzaCI6MH1dLCJtZXNoZXMiOlt7InByaW1pdGl2ZXMiOlt7ImF0dHJpYnV0ZXMiOnsiUE9TSVRJT04iOjEsIk5PUk1BTCI6Mn0sImluZGljZXMiOjAsIm1hdGVyaWFsIjowLCJtb2RlIjo0fV19XSwibWF0ZXJpYWxzIjpbeyJwYnJNZXRhbGxpY1JvdWdobmVzcyI6eyJiYXNlQ29sb3JGYWN0b3IiOlswLjg4LDAuOTcsMS4wLDAuOF0sIm1ldGFsbGljRmFjdG9yIjowLjAsInJvdWdobmVzc0ZhY3RvciI6MC4wM30sImRvdWJsZVNpZGVkIjp0cnVlLCJhbHBoYU1vZGUiOiJCTEVORCJ9XSwiYWNjZXNzb3JzIjpbeyJidWZmZXJWaWV3IjowLCJieXRlT2Zmc2V0IjowLCJjb21wb25lbnRUeXBlIjo1MTIzLCJjb3VudCI6Mzc4LCJ0eXBlIjoiU0NBTEFSIiwibWluIjpbMF0sIm1heCI6WzM3N119LHsiYnVmZmVyVmlldyI6MSwiYnl0ZU9mZnNldCI6MCwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjM3OCwidHlwZSI6IlZFQzMiLCJtaW4iOlstMS4wLC0wLjUxOTk5OTk4MDkyNjUxMzcsLTEuMF0sIm1heCI6WzEuMCwwLjI1OTk5OTk5MDQ2MzI1Njg0LDEuMF19LHsiYnVmZmVyVmlldyI6MiwiYnl0ZU9mZnNldCI6MCwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjM3OCwidHlwZSI6IlZFQzMiLCJtaW4iOlstMSwtMSwtMV0sIm1heCI6WzEsMSwxXX1dLCJidWZmZXJWaWV3cyI6W3siYnVmZmVyIjowLCJieXRlT2Zmc2V0IjowLCJieXRlTGVuZ3RoIjo3NTYsInRhcmdldCI6MzQ5NjN9LHsiYnVmZmVyIjowLCJieXRlT2Zmc2V0Ijo3NTYsImJ5dGVMZW5ndGgiOjQ1MzYsImJ5dGVTdHJpZGUiOjEyLCJ0YXJnZXQiOjM0OTYyfSx7ImJ1ZmZlciI6MCwiYnl0ZU9mZnNldCI6NTI5MiwiYnl0ZUxlbmd0aCI6NDUzNiwiYnl0ZVN0cmlkZSI6MTIsInRhcmdldCI6MzQ5NjJ9XSwiYnVmZmVycyI6W3siYnl0ZUxlbmd0aCI6OTgyOH1dfSBkJgAAQklOAAAAAQACAAMABAAFAAYABwAIAAkACgALAAwADQAOAA8AEAARABIAEwAUABUAFgAXABgAGQAaABsAHAAdAB4AHwAgACEAIgAjACQAJQAmACcAKAApACoAKwAsAC0ALgAvADAAMQAyADMANAA1ADYANwA4ADkAOgA7ADwAPQA+AD8AQABBAEIAQwBEAEUARgBHAEgASQBKAEsATABNAE4ATwBQAFEAUgBTAFQAVQBWAFcAWABZAFoAWwBcAF0AXgBfAGAAYQBiAGMAZABlAGYAZwBoAGkAagBrAGwAbQBuAG8AcABxAHIAcwB0AHUAdgB3AHgAeQB6AHsAfAB9AH4AfwCAAIEAggCDAIQAhQCGAIcAiACJAIoAiwCMAI0AjgCPAJAAkQCSAJMAlACVAJYAlwCYAJkAmgCbAJwAnQCeAJ8AoAChAKIAowCkAKUApgCnAKgAqQCqAKsArACtAK4ArwCwALEAsgCzALQAtQC2ALcAuAC5ALoAuwC8AL0AvgC/AMAAwQDCAMMAxADFAMYAxwDIAMkAygDLAMwAzQDOAM8A0ADRANIA0wDUANUA1gDXANgA2QDaANsA3ADdAN4A3wDgAOEA4gDjAOQA5QDmAOcA6ADpAOoA6wDsAO0A7gDvAPAA8QDyAPMA9AD1APYA9wD4APkA+gD7APwA/QD+AP8AAAEBAQIBAwEEAQUBBgEHAQgBCQEKAQsBDAENAQ4BDwEQAREBEgETARQBFQEWARcBGAEZARoBGwEcAR0BHgEfASABIQEiASMBJAElASYBJwEoASkBKgErASwBLQEuAS8BMAExATIBMwE0ATUBNgE3ATgBOQE6ATsBPAE9AT4BPwFAAUEBQgFDAUQBRQFGAUcBSAFJAUoBSwFMAU0BTgFPAVABUQFSAVMBVAFVAVYBVwFYAVkBWgFbAVwBXQFeAV8BYAFhAWIBYwFkAWUBZgFnAWgBaQFqAWsBbAFtAW4BbwFwAXEBcgFzAXQBdQF2AXcBeAF5AbgeBT+4HoU+AAAAAET59T64HoU+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8wQ1PxXvwz4AAAAAXoNsP/MENT8K16M98wQ1PxXvwz4AAAAAXoNsPxXvwz4K16M9XoNsPxXvwz4K16M9XoNsPxXvwz4AAAAAXoNsPzIxjSQAAAAAAACAPxXvwz4K16M9XoNsPzIxjSQAAAAAAACAPzIxjSQK16M9AACAPzIxjSQK16M9AACAPzIxjSQAAAAAAACAPxXvw74AAAAAXoNsPzIxjSQK16M9AACAPxXvw74AAAAAXoNsPxXvw74K16M9XoNsPxXvw74K16M9XoNsPxXvw74AAAAAXoNsP/MENb8AAAAA8wQ1PxXvw74K16M9XoNsP/MENb8AAAAA8wQ1P/MENb8K16M98wQ1P/MENb8K16M98wQ1P/MENb8AAAAA8wQ1P16DbL8AAAAAFe/DPvMENb8K16M98wQ1P16DbL8AAAAAFe/DPl6DbL8K16M9Fe/DPl6DbL8K16M9Fe/DPl6DbL8AAAAAFe/DPgAAgL8AAAAAMjENJV6DbL8K16M9Fe/DPgAAgL8AAAAAMjENJQAAgL8K16M9MjENJQAAgL8K16M9MjENJQAAgL8AAAAAMjENJV6DbL8AAAAAFe/DvgAAgL8K16M9MjENJV6DbL8AAAAAFe/Dvl6DbL8K16M9Fe/Dvl6DbL8K16M9Fe/Dvl6DbL8AAAAAFe/DvvMENb8AAAAA8wQ1v16DbL8K16M9Fe/DvvMENb8AAAAA8wQ1v/MENb8K16M98wQ1v/MENb8K16M98wQ1v/MENb8AAAAA8wQ1vxXvw74AAAAAXoNsv/MENb8K16M98wQ1vxXvw74AAAAAXoNsvxXvw74K16M9XoNsvxXvw74K16M9XoNsvxXvw74AAAAAXoNsv8rJU6UAAAAAAACAvxXvw74K16M9XoNsv8rJU6UAAAAAAACAv8rJU6UK16M9AACAv8rJU6UK16M9AACAv8rJU6UAAAAAAACAvxXvwz4AAAAAXoNsv8rJU6UK16M9AACAvxXvwz4AAAAAXoNsvxXvwz4K16M9XoNsvxXvwz4K16M9XoNsvxXvwz4AAAAAXoNsv/MENT8AAAAA8wQ1vxXvwz4K16M9XoNsv/MENT8AAAAA8wQ1v/MENT8K16M98wQ1v/MENT8K16M98wQ1v/MENT8AAAAA8wQ1v16DbD8AAAAAFe/DvvMENT8K16M98wQ1v16DbD8AAAAA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2jkOvzHbVL8AAAAA2jkOv9o5Dr8AAACAMdtUv9o5Dr8AAACAMdtUv9o5Dr8AAACAMdtUv9o5Dr8AAAAAMdtUv9o5Dr8AAAAAMdtUv9o5Dr8AAAAAMdtUv8LFR74AAACAvhR7v8LFR74AAACAvhR7v8LFR74AAACAvhR7v8LFR74AAAAAvhR7v8LFR74AAAAAvhR7v8LFR74AAAAAvhR7v8LFRz4AAAAAvhR7v8LFRz4AAAAAvhR7v8LFRz4AAAAAvhR7v8LFRz4AAAAAvhR7v8LFRz4AAAAAvhR7v8LFRz4AAAAAvhR7v9o5Dj8AAAAAMdtUv9o5Dj8AAAAAMdtUv9o5Dj8AAAAAMdtUv9o5Dj8AAAAAMdtUv9o5Dj8AAAAAMdtUv9o5Dj8AAAAAMdtUvzHbVD8AAAAA2jkOvzHbVD8AAAAA2jkOvzHbVD8AAAAA2jkOvzHbVD8AAAAA2jkOvzHbVD8AAAAA2jkOvzHbVD8AAAAA2jkOv74Uez8AAAAAwsVHvr4Uez8AAAAAwsVHvr4Uez8AAAAAwsVHvr4Uez8AAAAAwsVHvr4Uez8AAAAAwsVHvr4Uez8AAAAAwsVHvr4Uez8AAAAAwsVHPr4Uez8AAAAAwsVHPr4Uez8AAAAAwsVHPr4Uez8AAAAAwsVHPr4Uez8AAAAAwsVHPr4Uez8AAAAAwsVHPjHbVD8AAAAA2jkOPzHbVD8AAAAA2jkOPzHbVD8AAAAA2jkOPzHbVD8AAAAA2jkOPzHbVD8AAAAA2jkOPzHbVD8AAAAA2jkOP9o5Dj8AAAAAMdtUP9o5Dj8AAAAAMdtUP9o5Dj8AAAAAMdtUP9o5Dj8AAAAAMdtUP9o5Dj8AAAAAMdtUP9o5Dj8AAAAAMdtUP8LFRz4AAAAAvhR7P8LFRz4AAAAAvhR7P8LFRz4AAAAAvhR7P8LFRz4AAAAAvhR7P8LFRz4AAAAAvhR7P8LFRz4AAAAAvhR7P8LFR74AAAAAvhR7P8LFR74AAAAAvhR7P8LFR74AAAAAvhR7P8LFR74AAAAAvhR7P8LFR74AAAAAvhR7P8LFR74AAAAAvhR7P9o5Dr8AAAAAMdtUP9o5Dr8AAAAAMdtUP9o5Dr8AAAAAMdtUP9o5Dr8AAAAAMdtUP9o5Dr8AAAAAMdtUP9o5Dr8AAAAAMdtUPzHbVL8AAAAA2jkOPzHbVL8AAAAA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",
   ruby: "data:model/gltf-binary;base64,Z2xURgIAAAA8HQAAJAQAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAifSwic2NlbmUiOjAsInNjZW5lcyI6W3sibm9kZXMiOlswXX1dLCJub2RlcyI6W3sibWVzaCI6MH1dLCJtZXNoZXMiOlt7InByaW1pdGl2ZXMiOlt7ImF0dHJpYnV0ZXMiOnsiUE9TSVRJT04iOjEsIk5PUk1BTCI6Mn0sImluZGljZXMiOjAsIm1hdGVyaWFsIjowLCJtb2RlIjo0fV19XSwibWF0ZXJpYWxzIjpbeyJwYnJNZXRhbGxpY1JvdWdobmVzcyI6eyJiYXNlQ29sb3JGYWN0b3IiOlswLjksMC4wNSwwLjMsMC44OF0sIm1ldGFsbGljRmFjdG9yIjowLjEsInJvdWdobmVzc0ZhY3RvciI6MC4wNn0sImRvdWJsZVNpZGVkIjp0cnVlLCJhbHBoYU1vZGUiOiJCTEVORCJ9XSwiYWNjZXNzb3JzIjpbeyJidWZmZXJWaWV3IjowLCJieXRlT2Zmc2V0IjowLCJjb21wb25lbnRUeXBlIjo1MTIzLCJjb3VudCI6MjQ2LCJ0eXBlIjoiU0NBTEFSIiwibWluIjpbMF0sIm1heCI6WzI0NV19LHsiYnVmZmVyVmlldyI6MSwiYnl0ZU9mZnNldCI6MCwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjI0NiwidHlwZSI6IlZFQzMiLCJtaW4iOlstMC40Mzk5OTk5OTc2MTU4MTQyLC0wLjU0MDAwMDAyMTQ1NzY3MjEsLTAuMzExOTc2OTM5NDM5NzczNTZdLCJtYXgiOlswLjQzOTk5OTk5NzYxNTgxNDIsMC4xODAwMDAwMDcxNTI1NTczNywwLjMxMTk3NjkzOTQzOTc3MzU2XX0seyJidWZmZXJWaWV3IjoyLCJieXRlT2Zmc2V0IjowLCJjb21wb25lbnRUeXBlIjo1MTI2LCJjb3VudCI6MjQ2LCJ0eXBlIjoiVkVDMyIsIm1pbiI6Wy0xLC0xLC0xXSwibWF4IjpbMSwxLDFdfV0sImJ1ZmZlclZpZXdzIjpbeyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjAsImJ5dGVMZW5ndGgiOjQ5MiwidGFyZ2V0IjozNDk2M30seyJidWZmZXIiOjAsImJ5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",
@@ -387,9 +584,51 @@ function buildMultiGrid(){
   });
 }
 
-/* ── SELECT GEM ── */
+/* ── STATE: mode tracking ── */
+let mode='single';                 // 'single' | 'merged'
+let mergedIds=[];                  // current merged gem ids
+let mergedHotspotIdx=0;            // cycle index for multi mode
+const hsInfo=document.querySelector('[slot="hotspot-info"]');
+const hsCycle=document.querySelector('[slot="hotspot-cycle"]');
+const hsGlow=document.querySelector('[slot="hotspot-glow"]');
+const arHud=document.getElementById('ar-hud');
+const hudLabel=document.getElementById('hud-label');
+const mergeOverlay=document.getElementById('merge-overlay');
+const mergeIcons=document.getElementById('merge-icons');
+const mergeSub=document.getElementById('merge-sub');
+
+/* ── HOTSPOTS: show/hide depending on mode ── */
+function setHotspotsForMode(){
+  // We always show the 3 generic hotspots. In merged mode they apply to "current" gem.
+  // Additionally, in merged mode we inject per-gem tags above each model.
+  document.querySelectorAll('.hotspot.gem-tag').forEach(el=>el.remove());
+  if(mode==='merged' && mergedIds.length){
+    const spacing=0.55;
+    mergedIds.forEach((id,i)=>{
+      const gem=GEMS.find(g=>g.id===id); if(!gem)return;
+      const x=(i-(mergedIds.length-1)/2)*spacing;
+      const btn=document.createElement('button');
+      btn.className='hotspot gem-tag';
+      btn.setAttribute('slot',`hotspot-gem-${i}`);
+      btn.setAttribute('data-position',`${x.toFixed(3)} 0.30 0`);
+      btn.setAttribute('data-normal','0 1 0');
+      btn.style.setProperty('--chip',gem.color);
+      btn.style.setProperty('--chip-glow',gem.color+'66');
+      btn.innerHTML=`<span class="hs-icon">${gem.icon}</span><span class="hs-lbl">${gem.nameEN}</span>`;
+      btn.addEventListener('click',()=>{
+        mergedHotspotIdx=i;
+        showInfoForGem(gem);
+        flashGlow(gem.color);
+      });
+      mv.appendChild(btn);
+    });
+  }
+}
+
+/* ── SELECT GEM (single mode) ── */
 function selectGem(idx){
-  if(idx===activeIdx&&modelLoaded)return;
+  if(mode==='single' && idx===activeIdx && modelLoaded) return;
+  mode='single'; mergedIds=[];
   activeIdx=idx; modelLoaded=false;
   const gem=GEMS[idx];
   document.querySelectorAll('.gem-chip').forEach((c,i)=>{c.classList.toggle('active',i===idx);c.style.setProperty('--chip-color',GEMS[i].color)});
@@ -411,11 +650,69 @@ function selectGem(idx){
   document.getElementById('info-card').style.borderTopColor=gem.color+'50';
   progressBar.style.width='50%';
   mv.src=GEM_GLB[gem.id];
+  setHotspotsForMode();
+  hudLabel.textContent=`${gem.icon} ${gem.nameAR}`;
   toast('✦ '+gem.nameAR);
-  // show interaction hint
   const h=document.getElementById('hint');
   h.style.animation='none'; void h.offsetWidth;
   h.style.animation='hintFade 3s ease 0.5s forwards';
+}
+
+/* ── HOTSPOT HANDLERS ── */
+let _hudTimer=null;
+function showInfoForGem(gem){
+  const msg=`${gem.icon} ${gem.nameAR} — صلابة ${gem.hardness} • كثافة ${gem.density}`;
+  if(arHud.classList.contains('show')){
+    // We're inside AR — toasts don't show through dom-overlay, use HUD label
+    const orig=hudLabel.textContent;
+    hudLabel.textContent=msg;
+    clearTimeout(_hudTimer);
+    _hudTimer=setTimeout(()=>{hudLabel.textContent=orig;_hudTimer=null},3200);
+  } else {
+    toast(msg,'ok');
+  }
+}
+hsInfo.addEventListener('click',()=>{
+  if(mode==='merged'){
+    const gem=GEMS.find(g=>g.id===mergedIds[mergedHotspotIdx]); if(gem) showInfoForGem(gem);
+  } else {
+    showInfoForGem(GEMS[activeIdx]);
+  }
+});
+hsCycle.addEventListener('click',()=>{
+  if(mode==='merged'){
+    mergedHotspotIdx=(mergedHotspotIdx+1)%mergedIds.length;
+    const gem=GEMS.find(g=>g.id===mergedIds[mergedHotspotIdx]);
+    if(gem){hudLabel.textContent=`${gem.icon} ${gem.nameAR}`; flashGlow(gem.color); showInfoForGem(gem)}
+  } else {
+    const next=(activeIdx+1)%GEMS.length;
+    selectGem(next);
+  }
+});
+hsGlow.addEventListener('click',()=>{
+  const color=(mode==='merged')
+    ? (GEMS.find(g=>g.id===mergedIds[mergedHotspotIdx])?.color||'#D4AF37')
+    : GEMS[activeIdx].color;
+  flashGlow(color);
+});
+
+/* ── GLOW EFFECT: pulse exposure + label ── */
+let _glowing=false;
+function flashGlow(color){
+  if(_glowing) return; _glowing=true;
+  const orig=parseFloat(mv.getAttribute('exposure')||'1.2');
+  const start=performance.now(); const DUR=1100;
+  function tick(now){
+    const t=(now-start)/DUR;
+    if(t>=1){ mv.setAttribute('exposure',String(orig)); _glowing=false; return; }
+    const k=Math.sin(t*Math.PI); // 0→1→0
+    mv.setAttribute('exposure',String(orig + k*1.5));
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  flEN.classList.remove('glowing'); void flEN.offsetWidth; flEN.classList.add('glowing');
+  flEN.style.color=color;
+  flEN.style.textShadow=`0 0 28px ${color}, 0 0 60px ${color}88`;
 }
 
 /* ── MODEL VIEWER EVENTS ── */
@@ -428,9 +725,37 @@ mv.addEventListener('load',()=>{
 mv.addEventListener('error',()=>{mvLoader.classList.add('hidden');arBtn.disabled=true;arBtnTxt.textContent='خطأ';toast('⚠️ خطأ في التحميل','err')});
 mv.addEventListener('ar-status',(e)=>{
   const st=e.detail.status;
-  if(st==='session-started')toast('✓ وضع AR نشط','ok');
-  if(st==='not-presenting'){arBtn.disabled=false;arBtnTxt.textContent='وضع AR'}
-  if(st==='failed'){toast('⚠️ فشل AR','err');arBtn.disabled=false;arBtnTxt.textContent='وضع AR'}
+  if(st==='session-started'){toast('✓ وضع AR نشط','ok'); arHud.classList.add('show')}
+  if(st==='not-presenting'){arBtn.disabled=false;arBtnTxt.textContent='وضع AR'; arHud.classList.remove('show')}
+  if(st==='failed'){toast('⚠️ فشل AR','err');arBtn.disabled=false;arBtnTxt.textContent='وضع AR'; arHud.classList.remove('show')}
+});
+
+/* ── AR HUD CONTROLS (in-AR) ── */
+document.getElementById('hud-prev').addEventListener('click',()=>{
+  if(mode==='merged'){
+    mergedHotspotIdx=(mergedHotspotIdx-1+mergedIds.length)%mergedIds.length;
+    const gem=GEMS.find(g=>g.id===mergedIds[mergedHotspotIdx]);
+    if(gem){hudLabel.textContent=`${gem.icon} ${gem.nameAR}`; flashGlow(gem.color)}
+  } else {
+    const prev=(activeIdx-1+GEMS.length)%GEMS.length;
+    selectGem(prev);
+  }
+});
+document.getElementById('hud-next').addEventListener('click',()=>{
+  if(mode==='merged'){
+    mergedHotspotIdx=(mergedHotspotIdx+1)%mergedIds.length;
+    const gem=GEMS.find(g=>g.id===mergedIds[mergedHotspotIdx]);
+    if(gem){hudLabel.textContent=`${gem.icon} ${gem.nameAR}`; flashGlow(gem.color)}
+  } else {
+    const next=(activeIdx+1)%GEMS.length;
+    selectGem(next);
+  }
+});
+document.getElementById('hud-glow').addEventListener('click',()=>{
+  const color=(mode==='merged')
+    ? (GEMS.find(g=>g.id===mergedIds[mergedHotspotIdx])?.color||'#D4AF37')
+    : GEMS[activeIdx].color;
+  flashGlow(color);
 });
 
 /* ── ENTER AR (single) ── */
@@ -445,81 +770,92 @@ function enterAR(){
   mv.activateAR();
 }
 
-/* ── MULTI AR ── */
-function openMultiPanel(){
-  document.getElementById('multi-panel').classList.add('show');
-}
-function closeMultiPanel(){
-  document.getElementById('multi-panel').classList.remove('show');
-}
+/* ── MULTI AR PANEL ── */
+function openMultiPanel(){document.getElementById('multi-panel').classList.add('show')}
+function closeMultiPanel(){document.getElementById('multi-panel').classList.remove('show')}
 
 function toggleMultiSelect(id){
   if(multiSelected.has(id)) multiSelected.delete(id);
   else if(multiSelected.size<4) multiSelected.add(id);
   else{toast('⚠️ 4 أحجار كحد أقصى','err');return}
-
   document.querySelectorAll('.mp-chip').forEach(c=>{
     const cid=c.id.replace('mp-','');
     c.classList.toggle('selected',multiSelected.has(cid));
   });
-
   const n=multiSelected.size;
   const countEl=document.getElementById('mp-count');
   countEl.textContent = n===0?'لم تختر بعد':` ${n} حجر${n>1?'':''}  مختار`;
   document.getElementById('mp-launch-btn').disabled=(n<2);
 }
 
-function launchMultiAR(){
-  if(!mv.canActivateAR){
-    toast('⚠️ AR غير متاح على هذا الجهاز','err'); return;
-  }
+/* ── LAUNCH MULTI-AR via real merging ── */
+async function launchMultiAR(){
+  if(!mv.canActivateAR){toast('⚠️ AR غير متاح على هذا الجهاز','err'); return}
   const chosen=[...multiSelected];
   if(chosen.length<2){toast('⚠️ اختر حجرين على الأقل','err');return}
 
   closeMultiPanel();
 
-  // Strategy: load first gem → AR, subsequent ones shown as separate sessions
-  // For WebXR multi-model we cycle through them with a brief message
-  const firstName=GEMS.find(g=>g.id===chosen[0])?.nameAR||chosen[0];
-  toast(`✦ تحضير ${chosen.length} أحجار للـ AR`,'ok');
+  // Show merge overlay
+  mergeIcons.innerHTML = chosen.map((id,i)=>{
+    const g=GEMS.find(g=>g.id===id);
+    return (i>0?'<span class="plus">+</span>':'') + `<span>${g?.icon||'◆'}</span>`;
+  }).join('');
+  mergeSub.textContent='جارٍ دمج النماذج…';
+  mergeOverlay.classList.add('show');
 
-  // Load first selected gem and activate AR
-  const firstGem=GEMS.find(g=>g.id===chosen[0]);
-  if(!firstGem)return;
+  try{
+    const {dataUrl,positions}=await buildMergedGLB(chosen);
+    mode='merged'; mergedIds=chosen.slice(); mergedHotspotIdx=0;
+    modelLoaded=false;
 
-  // Switch viewer to first selected gem
-  activeIdx=GEMS.indexOf(firstGem);
-  mv.src=GEM_GLB[firstGem.id];
+    // Update UI labels for merged
+    const names=chosen.map(id=>GEMS.find(g=>g.id===id)?.nameEN||'').join(' • ');
+    const namesAR=chosen.map(id=>GEMS.find(g=>g.id===id)?.nameAR||'').join(' • ');
+    flEN.textContent=`${chosen.length}× GEMS`;
+    flEN.style.color='var(--gold)';
+    flEN.style.textShadow='0 0 28px rgba(212,175,55,0.45)';
+    flAR.textContent=namesAR;
+    hudLabel.textContent = `${chosen.length} أحجار مدموجة`;
 
-  let arReady=false;
-  const onLoad=()=>{
-    if(arReady)return; arReady=true;
-    mv.removeEventListener('load',onLoad);
-    showStatus(`AR — ${chosen.map(id=>GEMS.find(g=>g.id===id)?.icon).join(' ')}`);
+    // Update info panel to multi
+    document.getElementById('c-emoji').textContent='✦';
+    document.getElementById('c-emoji').style.background='rgba(212,175,55,0.14)';
+    document.getElementById('c-emoji').style.boxShadow='0 0 18px rgba(212,175,55,0.30)';
+    document.getElementById('c-en').textContent='MULTI SCENE';
+    document.getElementById('c-ar').textContent=namesAR;
+    document.getElementById('c-desc').textContent='مشهد AR مدموج — اضغط أيقونة أي حجر لتفاصيله أو استخدم زر التبديل للتنقل بينها.';
+    document.getElementById('s-hard').textContent=chosen.length+' / 11';
+    document.getElementById('s-dens').textContent='—';
+    document.getElementById('s-orig').textContent='مشهد مركّب';
+
+    // Load merged into model-viewer
+    mvLoader.classList.remove('hidden'); loaderTxt.textContent='تجهيز المشهد المدموج…';
+    progressBar.style.width='40%';
+    arBtn.disabled=true; arBtnTxt.textContent='جارٍ التحميل…';
+
+    mergeSub.textContent='✓ تم الدمج — جارٍ التحميل…';
+    mv.src=dataUrl;
+    setHotspotsForMode();
+
+    // Wait for load, then enter AR
+    await new Promise((resolve,reject)=>{
+      const onL=()=>{mv.removeEventListener('load',onL); mv.removeEventListener('error',onE); resolve()};
+      const onE=()=>{mv.removeEventListener('load',onL); mv.removeEventListener('error',onE); reject(new Error('model load failed'))};
+      mv.addEventListener('load',onL);
+      mv.addEventListener('error',onE);
+    });
+    mergeOverlay.classList.remove('show');
+    toast(`✦ ${chosen.length} أحجار جاهزة للـ AR`,'ok');
     setTimeout(()=>{
-      if(mv.canActivateAR){
-        mv.activateAR();
-        // After first AR session, offer the next gem
-        let idx=1;
-        const next=()=>{
-          if(idx>=chosen.length)return;
-          const nid=chosen[idx++];
-          const ng=GEMS.find(g=>g.id===nid);
-          if(!ng)return;
-          setTimeout(()=>{
-            toast(`اضغط AR لوضع ${ng.nameAR} ${ng.icon}`);
-            mv.src=GEM_GLB[ng.id];
-            mv.addEventListener('load',()=>{
-              arBtn.disabled=false; arBtnTxt.textContent=`AR — ${ng.icon}`;
-              arBtn.onclick=()=>{mv.activateAR();next()};
-            },{once:true});
-          },800);
-        };
-        mv.addEventListener('ar-status',(e)=>{if(e.detail.status==='not-presenting')next()},{once:true});
-      }
-    },400);
-  };
-  mv.addEventListener('load',onLoad);
+      if(mv.canActivateAR) mv.activateAR();
+      else toast('⚠️ تعذّر فتح AR','err');
+    },300);
+  }catch(err){
+    console.error(err);
+    mergeOverlay.classList.remove('show');
+    toast('⚠️ فشل دمج النماذج','err');
+  }
 }
 
 /* ── TOGGLE INFO ── */
@@ -535,9 +871,28 @@ function toast(msg,type=''){
 }
 
 /* ── INIT ── */
-buildMenu();
-buildMultiGrid();
-selectGem(0);
+async function init(){
+  // Generate the procedural silver ingot and replace its entry
+  try{
+    showStatus('تجهيز نموذج الفضة…');
+    const silverURL=await buildSilverGLB();
+    GEM_GLB.silver=silverURL;
+  }catch(e){
+    console.warn('Silver gen failed:',e);
+  }
+  buildMenu();
+  buildMultiGrid();
+  selectGem(0);
+}
+
+/* Expose globals for inline onclick handlers */
+window.enterAR=enterAR;
+window.openMultiPanel=openMultiPanel;
+window.closeMultiPanel=closeMultiPanel;
+window.launchMultiAR=launchMultiAR;
+window.toggleInfo=toggleInfo;
+
+init();
 </script>
 </body>
 </html>
