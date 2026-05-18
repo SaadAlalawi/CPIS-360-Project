@@ -261,18 +261,19 @@
 
 
 /* ── AR CARDS (info & quiz overlays) ── */
-    .ar-card{position:absolute;top:50%;left:50%;
-      transform:translate(-50%,-50%) scale(0.92);
-      z-index:40;width:min(86vw,360px);max-height:78vh;overflow-y:auto;
-      background:rgba(7,7,15,0.95);backdrop-filter:blur(20px) saturate(140%);
-      -webkit-backdrop-filter:blur(20px) saturate(140%);
-      border:1.5px solid var(--gold);border-radius:18px;
-      padding:18px 18px 16px;color:var(--text);
-      box-shadow:0 12px 60px rgba(0,0,0,0.75),0 0 30px rgba(212,175,55,0.22);
+.ar-card{position:absolute;
+      bottom:calc(env(safe-area-inset-bottom,0px) + 90px);
+      left:50%;transform:translateX(-50%) translateY(20px) scale(0.95);
+      z-index:40;width:min(78vw,320px);max-height:55vh;overflow-y:auto;
+      background:rgba(7,7,15,0.72);backdrop-filter:blur(18px) saturate(140%);
+      -webkit-backdrop-filter:blur(18px) saturate(140%);
+      border:1px solid var(--gold);border-radius:16px;
+      padding:14px 14px 12px;color:var(--text);
+      box-shadow:0 8px 40px rgba(0,0,0,0.6),0 0 22px rgba(212,175,55,0.18);
       opacity:0;visibility:hidden;pointer-events:auto;
       transition:opacity .3s,visibility .3s,transform .3s}
     .ar-card.show{opacity:1;visibility:visible;
-      transform:translate(-50%,-50%) scale(1)}
+      transform:translateX(-50%) translateY(0) scale(1)}
     .ar-card-close{position:absolute;top:8px;left:10px;width:30px;height:30px;
       border:none;border-radius:50%;background:rgba(255,255,255,0.08);
       color:var(--text);font-size:1.3rem;line-height:1;cursor:pointer;
@@ -281,19 +282,20 @@
     .ar-card-close:active{transform:scale(0.92)}
 
     /* AR INFO CARD content */
-    .ar-card-emoji{font-size:3.2rem;text-align:center;margin:8px 0;
-      filter:drop-shadow(0 0 18px currentColor);line-height:1}
-    .ar-card-en{font-family:var(--fn-en);font-size:1.35rem;letter-spacing:3px;
+.ar-card-emoji{font-size:2.2rem;text-align:center;margin:4px 0;
+      filter:drop-shadow(0 0 14px currentColor);line-height:1}
+    .ar-card-en{font-family:var(--fn-en);font-size:1.05rem;letter-spacing:2px;
       color:var(--gold);text-align:center}
-    .ar-card-ar{font-size:0.92rem;color:var(--muted);text-align:center;
-      margin-top:3px;margin-bottom:14px}
-    .ar-card-desc{font-size:0.86rem;line-height:1.85;color:rgba(240,236,224,0.88);
-      padding:11px 12px;background:rgba(255,255,255,0.04);border-radius:11px;
-      border-right:2px solid var(--gold);margin-bottom:12px;text-align:right}
+    .ar-card-ar{font-size:0.8rem;color:var(--muted);text-align:center;
+      margin-top:2px;margin-bottom:10px}
+    .ar-card-desc{font-size:0.75rem;line-height:1.6;color:rgba(240,236,224,0.85);
+      padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:9px;
+      border-right:2px solid var(--gold);margin-bottom:10px;text-align:right;
+      max-height:80px;overflow-y:auto}
     .ar-card-stats{display:flex;gap:6px}
-    .ar-stat{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
-      border-radius:11px;padding:9px 5px;text-align:center;
-      display:flex;flex-direction:column;gap:4px}
+.ar-stat{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+      border-radius:9px;padding:6px 4px;text-align:center;
+      display:flex;flex-direction:column;gap:2px}
     .ar-s-lbl{font-size:0.6rem;color:var(--muted);letter-spacing:0.5px}
     .ar-s-val{font-size:0.84rem;font-weight:700;color:var(--gold-lt)}
 
@@ -301,16 +303,16 @@
     .quiz-header{font-family:var(--fn-en);font-size:1rem;letter-spacing:3px;
       color:var(--gold);text-align:center;margin-bottom:14px;padding-bottom:10px;
       border-bottom:1px solid rgba(212,175,55,0.22)}
-    .quiz-question{font-size:0.95rem;line-height:1.7;color:var(--text);
-      text-align:center;margin-bottom:16px;padding:0 4px}
-    .quiz-em{font-size:3.6rem;display:block;margin:4px auto 12px;line-height:1;
-      filter:drop-shadow(0 0 22px currentColor)}
+.quiz-question{font-size:0.85rem;line-height:1.5;color:var(--text);
+      text-align:center;margin-bottom:10px;padding:0 4px}
+.quiz-em{font-size:2.4rem;display:block;margin:2px auto 8px;line-height:1;
+      filter:drop-shadow(0 0 16px currentColor)}
     .quiz-clue{font-size:0.74rem;color:var(--muted);margin-top:6px;line-height:1.6}
     .quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-    .quiz-opt{padding:11px 8px;border-radius:12px;
+.quiz-opt{padding:8px 6px;border-radius:10px;
       border:1px solid rgba(255,255,255,0.10);
       background:rgba(255,255,255,0.04);color:var(--text);cursor:pointer;
-      font-family:var(--fn-ar);font-size:0.86rem;text-align:center;
+      font-family:var(--fn-ar);font-size:0.78rem;text-align:center;
       transition:background .2s,border-color .2s,transform .12s}
     .quiz-opt:hover:not(:disabled){background:rgba(212,175,55,0.16);
       border-color:var(--gold)}
