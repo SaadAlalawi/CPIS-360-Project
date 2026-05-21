@@ -244,12 +244,14 @@
       z-index:30;display:flex;gap:4px;align-items:center;
       background:rgba(7,7,15,0.88);backdrop-filter:blur(14px) saturate(140%);
       border:1px solid var(--gold);border-radius:50px;
-      padding:4px 6px;pointer-events:auto;opacity:0;visibility:hidden;
+      padding:3px 6px;pointer-events:auto;opacity:0;visibility:hidden;
       box-shadow:0 4px 18px rgba(0,0,0,0.6),0 0 18px rgba(212,175,55,0.25);
       transition:opacity .35s,visibility .35s,transform .35s}
     #ar-hud.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
-    .hud-btn{display:flex;align-items:center;justify-content:center;
-      width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;
+.hud-btn{display:flex;align-items:center;justify-content:center;
+      width:30px;height:30px;min-width:30px;min-height:30px;
+      flex:0 0 auto;flex-shrink:0;box-sizing:border-box;padding:0;line-height:1;
+      border-radius:50%;border:none;cursor:pointer;
       background:var(--gold-dim);color:var(--gold-lt);font-size:0.8rem;
       transition:background .2s,transform .15s}
     .hud-btn:hover{background:rgba(212,175,55,0.32)}
