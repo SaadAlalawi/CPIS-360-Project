@@ -259,7 +259,15 @@
     .hud-label{padding:0 12px;font-size:0.78rem;color:var(--gold-lt);
       letter-spacing:1px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-
+    /* ── إخفاء خلفية الصفحة أثناء AR ليظهر بثّ الكاميرا ── */
+    body.ar-active,
+    body.ar-active #app,
+    body.ar-active #viewer-wrap,
+    body.ar-active model-viewer{
+      background:transparent !important;
+      background-color:transparent !important;
+    }
+    body.ar-active::before{display:none !important}
 /* ── AR CARDS (info & quiz overlays) ── */
 .ar-card{position:absolute;
       bottom:calc(env(safe-area-inset-bottom,0px) + 90px);
@@ -894,10 +902,10 @@ mv.addEventListener('load',()=>{
 mv.addEventListener('error',()=>{mvLoader.classList.add('hidden');arBtn.disabled=true;arBtnTxt.textContent='خطأ';toast('⚠️ خطأ في التحميل','err')});
 mv.addEventListener('ar-status',(e)=>{
   const st=e.detail.status;
-  if(st==='session-started'){toast('✓ وضع AR نشط','ok'); arHud.classList.add('show')}
+  if(st==='session-started'){toast('✓ وضع AR نشط','ok'); arHud.classList.add('show'); document.body.classList.add('ar-active')}
   if(st==='not-presenting'){arBtn.disabled=false;arBtnTxt.textContent='وضع AR'; arHud.classList.remove('show');
-    arInfoCard.classList.remove('show'); quizCard.classList.remove('show')}
-  if(st==='failed'){toast('⚠️ فشل AR','err');arBtn.disabled=false;arBtnTxt.textContent='وضع AR'; arHud.classList.remove('show')}
+    arInfoCard.classList.remove('show'); quizCard.classList.remove('show'); document.body.classList.remove('ar-active')}
+  if(st==='failed'){toast('⚠️ فشل AR','err');arBtn.disabled=false;arBtnTxt.textContent='وضع AR'; arHud.classList.remove('show'); document.body.classList.remove('ar-active')}
 });
 
 /* ── AR HUD CONTROLS (in-AR) ── */
