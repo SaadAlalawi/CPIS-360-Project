@@ -196,14 +196,16 @@
     #https-warn a{color:#ffd700;text-decoration:underline}
 
     /* HOTSPOTS (work inside model-viewer + during AR) */
-    .hotspot{
-      --hs-color:var(--gold);
-      display:flex;flex-direction:column;align-items:center;gap:2px;
-      background:rgba(7,7,15,0.86);backdrop-filter:blur(10px);
-      border:1px solid rgba(212,175,55,0.45);border-radius:18px;
-      padding:5px 11px;cursor:pointer;color:var(--gold-lt);
-      font-family:var(--fn-ar);box-shadow:0 0 16px rgba(212,175,55,0.30);
-      pointer-events:auto;transition:transform .18s,box-shadow .25s;white-space:nowrap}
+.hotspot {
+      --hs-color: var(--gold);
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: rgba(7, 7, 15, 0.86); backdrop-filter: blur(10px);
+      border: 1px solid rgba(212,175,55,0.45); border-radius: 18px;
+      padding: 5px 11px; cursor: pointer; color: var(--gold-lt);
+      font-family: var(--fn-ar); box-shadow: 0 0 16px rgba(212,175,55,0.30);
+      pointer-events: auto; transition: transform .18s, box-shadow .25s; white-space: nowrap;
+      width: max-content; /* إضافة ضرورية هنا */
+    }
     .hotspot:hover{transform:scale(1.06);box-shadow:0 0 22px rgba(212,175,55,0.50)}
     .hotspot:active{transform:scale(0.92)}
     .hotspot[data-visibility-attribute="visible"]:not([data-visible]){opacity:0.4}
@@ -221,15 +223,37 @@
     }
     .fl-en.glowing{animation:glowPulse 1.2s ease-in-out}
 
-    /* In-AR HUD (shows during AR session) */
-    #ar-hud{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);
-      z-index:30;display:flex;gap:8px;align-items:center;
-      background:rgba(7,7,15,0.78);backdrop-filter:blur(14px);
-      border:1px solid var(--glass-b);border-radius:50px;
-      padding:6px 8px;pointer-events:auto;opacity:0;visibility:hidden;
-      transition:opacity .35s,visibility .35s,transform .35s;
-      transform:translateX(-50%) translateY(20px)}
-    #ar-hud.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+/* In-AR HUD (Clearer, repositioned) */
+    #ar-hud {
+      position: absolute;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      bottom: 50px;
+      width: max-content; /* هذا السطر يمنع الشاشة السوداء */
+      max-width: 90vw;
+      z-index: 30;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 12, 24, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-b);
+      border-radius: 50px;
+      padding: 10px 14px;
+      pointer-events: auto;
+      opacity: 0;
+      visibility: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transition: opacity .35s, visibility .35s, transform .35s;
+      transform: translateY(20px);
+    }
+    #ar-hud.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
     .hud-btn{display:flex;align-items:center;justify-content:center;
       width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;
       background:var(--gold-dim);color:var(--gold-lt);font-size:0.95rem;
@@ -281,9 +305,11 @@
       border:1px solid var(--gold);border-radius:16px;
       padding:14px 14px 12px;color:var(--text);
       box-shadow:0 8px 40px rgba(0,0,0,0.6),0 0 22px rgba(212,175,55,0.18);
-      opacity:0;visibility:hidden;pointer-events:auto;
+      opacity:0;visibility:hidden;
+      pointer-events:none; /* 👈 التعديل الأول: جعلها لا تتفاعل وهي مخفية */
       transition:opacity .3s,visibility .3s,transform .3s}
     .ar-card.show{opacity:1;visibility:visible;
+      pointer-events:auto; /* 👈 التعديل الثاني: تتفاعل فقط عندما تظهر */
       transform:translateX(-50%) translateY(0) scale(1)}
     .ar-card-close{position:absolute;top:8px;left:10px;width:30px;height:30px;
       border:none;border-radius:50%;background:rgba(255,255,255,0.08);
@@ -291,7 +317,6 @@
       display:flex;align-items:center;justify-content:center;font-weight:300}
     .ar-card-close:hover{background:rgba(255,255,255,0.18)}
     .ar-card-close:active{transform:scale(0.92)}
-
     /* AR INFO CARD content */
 .ar-card-emoji{font-size:2.2rem;text-align:center;margin:4px 0;
       filter:drop-shadow(0 0 14px currentColor);line-height:1}
