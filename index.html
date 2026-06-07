@@ -430,12 +430,12 @@
 
 <!-- AR HUD: shown during AR sessions, positioned at TOP -->
       <div id="ar-hud">
-        <button class="hud-btn" id="hud-prev" title="السابق">‹</button>
+        <button class="hud-btn" id="hud-prev" title="السابق" aria-label="الحجر السابق">‹</button>
         <div class="hud-label" id="hud-label">—</div>
-        <button class="hud-btn" id="hud-next" title="التالي">›</button>
-        <button class="hud-btn" id="hud-glow" title="توهج">✨</button>
-        <button class="hud-btn" id="hud-info" title="معلومات">ℹ</button>
-        <button class="hud-btn primary" id="hud-quiz" title="اسألني">?</button>
+        <button class="hud-btn" id="hud-next" title="التالي" aria-label="الحجر التالي">›</button>
+        <button class="hud-btn" id="hud-glow" title="توهج" aria-label="تأثير التوهج">✨</button>
+        <button class="hud-btn" id="hud-info" title="معلومات" aria-label="معلومات الحجر">ℹ</button>
+        <button class="hud-btn primary" id="hud-quiz" title="اسألني" aria-label="اختبار الأحجار">?</button>
       </div>
 
       <!-- AR INFO CARD -->
@@ -648,6 +648,8 @@ async function buildMergedGLB(ids){
     root.add(scene);
   }
   const dataUrl=await exportToGLB(root);
+  THREE.Cache.clear();
+  return {dataUrl,positions};
   return {dataUrl,positions};
 }
 
@@ -1066,7 +1068,7 @@ function toggleMultiSelect(id){
   });
   const n=multiSelected.size;
   const countEl=document.getElementById('mp-count');
-  countEl.textContent = n===0?'لم تختر بعد':` ${n} حجر${n>1?'':''}  مختار`;
+countEl.textContent = n===0 ? 'لم تختر بعد' : `${n} ${n===1?'حجر':'أحجار'} مختارة`;
   document.getElementById('mp-launch-btn').disabled=(n<2);
 }
 
