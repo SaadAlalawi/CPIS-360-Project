@@ -407,7 +407,7 @@
       ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto"
       camera-controls auto-rotate auto-rotate-delay="1000" rotation-per-second="22deg"
       shadow-intensity="1.6" shadow-softness="0.9" exposure="1.2"
-      environment-image="neutral" interaction-prompt="auto"
+      interaction-prompt="auto"
       style="background:transparent;">
       <button slot="ar-button" style="display:none"></button>
 
@@ -447,7 +447,7 @@
         <p class="ar-card-desc" id="ar-info-desc">—</p>
         <div class="ar-card-stats">
           <div class="ar-stat">
-            <span class="ar-s-lbl">صلابة موز</span>
+            <span class="ar-s-lbl">صلابة موس </span>
             <span class="ar-s-val" id="ar-info-hard">—</span>
           </div>
           <div class="ar-stat">
@@ -536,7 +536,7 @@
       </div>
       <p class="c-desc" id="c-desc"></p>
       <div class="c-stats">
-        <div class="stat"><div class="s-lbl">صلابة موز</div><div class="s-val" id="s-hard">—</div></div>
+        <div class="stat"><div class="s-lbl">صلابة موس</div><div class="s-val" id="s-hard">—</div></div>
         <div class="stat"><div class="s-lbl">الكثافة</div><div class="s-val" id="s-dens">—</div></div>
         <div class="stat"><div class="s-lbl">المنشأ</div><div class="s-val" id="s-orig">—</div></div>
       </div>
@@ -649,7 +649,6 @@ async function buildMergedGLB(ids){
   }
   const dataUrl=await exportToGLB(root);
   THREE.Cache.clear();
-  return {dataUrl,positions};
   return {dataUrl,positions};
 }
 
@@ -795,6 +794,8 @@ function setHotspotsForMode(){
 /* ── SELECT GEM (single mode) ── */
 function selectGem(idx){
   if(mode==='single' && idx===activeIdx && modelLoaded) return;
+  arInfoCard.classList.remove('show');
+  quizCard.classList.remove('show');
   mode='single'; mergedIds=[];
   activeIdx=idx; modelLoaded=false;
   const gem=GEMS[idx];
