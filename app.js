@@ -105,12 +105,6 @@ const catLabel=(id)=>CATEGORIES.find(c=>c.id===id)?.label||'';
 
 function buildMenu(){
   const cats=$('cat-scroll');
-  const sb=document.createElement('button');
-  sb.type='button'; sb.className='cat-pill cat-search'; sb.id='menu-search-btn';
-  sb.setAttribute('aria-label','بحث'); sb.setAttribute('aria-expanded','false');
-  sb.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>';
-  sb.addEventListener('click',()=>toggleMenuSearch());
-  cats.appendChild(sb);
   CATEGORIES.forEach(cat=>{
     const n=cat.id==='all'?GEMS.length:GEMS.filter(g=>g.cat===cat.id).length;
     const b=document.createElement('button');
@@ -126,7 +120,6 @@ function buildMenu(){
     c.type='button';
     c.className='gem-chip';
     c.dataset.cat=gem.cat;
-    c.dataset.search=normAr(`${gem.nameAR} ${gem.nameEN}`);
     c.setAttribute('aria-label',gem.nameAR);
     c.style.setProperty('--chip-color',gem.color);
     c.innerHTML=`<span class="chip-em">${gemIcon(gem)}</span><span class="chip-lbl">${gem.nameEN}</span><span class="chip-dot"></span>`;
@@ -135,34 +128,89 @@ function buildMenu(){
   });
 }
 
-/* ── main-menu search ── */
-let menuQuery='';
 function applyMenuFilter(){
-  let shown=0;
-  document.querySelectorAll('.gem-chip').forEach((c,i)=>{
-    const hit=menuQuery ? c.dataset.search.includes(menuQuery) : inCat(GEMS[i]);
-    c.hidden=!hit; shown+=hit;
-  });
-  $('menu-empty').hidden=shown>0;
+  document.querySelectorAll('.gem-chip').forEach((c,i)=>{c.hidden=!inCat(GEMS[i])});
 }
-function toggleMenuSearch(force){
-  const row=$('menu-search-row'), open=force??row.hidden;
-  row.hidden=!open; $('menu-search-btn').setAttribute('aria-expanded',String(open));
-  if(open){ $('menu-search').focus(); }
-  else { $('menu-search').value=''; menuQuery=''; applyMenuFilter(); }
+
+/* ── SEARCH BAR ──
+   Matches every word typed against the gem's names first, then its
+   category, origin and description — so "أحمر" or "البرازيل" work too. */
+const SEARCH_INDEX=GEMS.map((g,i)=>({i,
+  name:normAr(`${g.nameAR} ${g.nameEN}`),
+  more:normAr(`${catLabel(g.cat)} ${g.origin} ${g.desc}`)}));
+const sInput=$('gem-search'), sList=$('search-list'), sClear=$('search-clear');
+let sResults=[], sActive=-1;
+
+function searchGems(q){
+  const words=normAr(q).split(/\s+/).filter(Boolean);
+  if(!words.length) return [];
+  const out=[];
+  for(const e of SEARCH_INDEX){
+    let score=0, viaMore=false;
+    for(const w of words){
+      if(e.name.split(' ').some(p=>p.startsWith(w))) score+=3;
+      else if(e.name.includes(w)) score+=2;
+      else if(e.more.includes(w)){ score+=1; viaMore=true; }
+      else { score=-1; break; }
+    }
+    if(score>0) out.push({i:e.i,score,viaMore});
+  }
+  return out.sort((a,b)=>b.score-a.score||a.i-b.i);
 }
-$('menu-search').addEventListener('input',(e)=>{
-  menuQuery=normAr(e.target.value);
-  applyMenuFilter();
-  $('menu-scroll').scrollTo({left:0});
+
+function renderSearch(){
+  const q=sInput.value.trim();
+  sClear.hidden=!q;
+  sResults=searchGems(q); sActive=sResults.length?0:-1;
+  if(!q){ closeSearch(); return; }
+  sList.innerHTML = sResults.length
+    ? sResults.slice(0,40).map((r,k)=>{
+        const g=GEMS[r.i];
+        const sub=r.viaMore?`${catLabel(g.cat)} • ${g.origin}`:catLabel(g.cat);
+        return `<li role="option" id="sr-${k}" data-k="${k}" aria-selected="${k===sActive}">
+          <span class="sr-ic">${gemIcon(g)}</span>
+          <span class="sr-txt"><span class="sr-ar">${g.nameAR}</span><span class="sr-sub">${sub}</span></span>
+          <span class="sr-en">${g.nameEN}</span></li>`;
+      }).join('') + (sResults.length>40?`<li class="sr-more">و${sResults.length-40} نتيجة أخرى — اكتب أكثر لتضييق البحث</li>`:'')
+    : '<li class="sr-none">لا يوجد حجر يطابق البحث</li>';
+  sList.hidden=false; sInput.setAttribute('aria-expanded','true');
+  sInput.setAttribute('aria-activedescendant',sActive>=0?`sr-${sActive}`:'');
+}
+function moveActive(d){
+  if(!sResults.length) return;
+  const n=Math.min(sResults.length,40);
+  sActive=(sActive+d+n)%n;
+  sList.querySelectorAll('[role="option"]').forEach(li=>li.setAttribute('aria-selected',String(+li.dataset.k===sActive)));
+  sList.querySelector(`#sr-${sActive}`)?.scrollIntoView({block:'nearest'});
+  sInput.setAttribute('aria-activedescendant',`sr-${sActive}`);
+}
+function closeSearch(){ sList.hidden=true; sInput.setAttribute('aria-expanded','false'); }
+function pickResult(k){
+  const r=sResults[k]; if(!r) return;
+  sInput.value=''; sClear.hidden=true; closeSearch(); sInput.blur();
+  if(!inCat(GEMS[r.i])) setCategory('all',{jump:false});
+  selectGem(r.i);
+}
+sInput.addEventListener('input',renderSearch);
+sInput.addEventListener('focus',()=>{ if(sInput.value.trim()) renderSearch(); });
+sInput.addEventListener('keydown',(e)=>{
+  if(e.key==='ArrowDown'){ e.preventDefault(); moveActive(1); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); moveActive(-1); }
+  else if(e.key==='Enter'){ e.preventDefault(); pickResult(Math.max(0,sActive)); }
+  else if(e.key==='Escape'){ if(!sList.hidden) closeSearch(); else { sInput.value=''; sClear.hidden=true; sInput.blur(); } }
 });
-$('menu-search').addEventListener('keydown',(e)=>{
-  if(e.key==='Escape') toggleMenuSearch(false);
-  if(e.key==='Enter'){ const first=[...document.querySelectorAll('.gem-chip')].find(c=>!c.hidden); first?.click(); }
+// pointerdown (not click) so the choice registers before the input loses focus
+sList.addEventListener('pointerdown',(e)=>{
+  const li=e.target.closest('[role="option"]'); if(!li) return;
+  e.preventDefault(); pickResult(+li.dataset.k);
+});
+sClear.addEventListener('click',()=>{ sInput.value=''; sClear.hidden=true; closeSearch(); sInput.focus(); });
+document.addEventListener('pointerdown',(e)=>{ if(!e.target.closest('#search-wrap')) closeSearch(); });
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='/'&&!/input|textarea/i.test(document.activeElement?.tagName||'')){ e.preventDefault(); sInput.focus(); }
 });
 
 function setCategory(id,{jump=true}={}){
-  if(menuQuery) toggleMenuSearch(false);
   activeCat=id;
   document.querySelectorAll('.cat-pill').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cat===id)));
   applyMenuFilter();

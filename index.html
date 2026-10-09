@@ -55,6 +55,17 @@
     </div>
   </div>
 
+  <!-- SEARCH BAR -->
+  <div id="search-wrap" role="search">
+    <div class="search-bar">
+      <svg class="search-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input type="text" id="gem-search" placeholder="ابحث عن حجر: الاسم، اللون، البلد…" autocomplete="off" enterkeyhint="search"
+        role="combobox" aria-label="ابحث عن حجر" aria-expanded="false" aria-controls="search-list" aria-autocomplete="list">
+      <button type="button" class="search-clear" id="search-clear" aria-label="مسح البحث" hidden>×</button>
+    </div>
+    <ul id="search-list" role="listbox" aria-label="نتائج البحث" hidden></ul>
+  </div>
+
   <!-- VIEWER -->
   <div id="viewer-wrap">
     <!-- dir="ltr": model-viewer's canvas and hotspots break inside an RTL page -->
@@ -212,11 +223,7 @@
   <!-- GEM MENU -->
   <div id="gem-menu">
     <div class="cat-scroll" id="cat-scroll" role="toolbar" aria-label="التصنيفات"></div>
-    <div class="menu-search-row" id="menu-search-row" hidden>
-      <input type="search" id="menu-search" class="mp-search" placeholder="ابحث بالعربي أو الإنجليزي…" aria-label="ابحث عن حجر" autocomplete="off">
-    </div>
     <div class="menu-scroll" id="menu-scroll"></div>
-    <div class="menu-empty" id="menu-empty" hidden>لا يوجد حجر بهذا الاسم</div>
   </div>
 </div>
 
