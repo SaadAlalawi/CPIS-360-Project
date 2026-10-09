@@ -375,3 +375,42 @@ model-viewer .hotspot,model-viewer .ar-card,#ar-hud{direction:rtl}
 .fl-en,.c-en,.ar-card-en,.mp-lbl,.chip-lbl{direction:ltr;unicode-bidi:isolate}
 .c-en{text-align:right}
 #status-badge{bottom:46px}
+
+/* ── 50-gem catalogue ── */
+.gem-icon{width:1em;height:1em;display:inline-block;vertical-align:middle;overflow:visible;
+  fill:currentColor;stroke:rgba(255,255,255,0.45);stroke-width:0.8;stroke-linejoin:round;
+  filter:drop-shadow(0 0 4px color-mix(in srgb,currentColor 45%,transparent))}
+.gem-icon .ln{fill:none;stroke:rgba(255,255,255,0.5);stroke-width:0.7}
+.gem-icon .hl{fill:rgba(255,255,255,0.55);stroke:none}
+.gem-icon .br{fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round}
+.c-emoji .gem-icon{font-size:1.9rem}
+.ar-card-emoji .gem-icon{font-size:2.4rem}
+.hs-icon .gem-icon{font-size:1.05rem}
+.merge-icons .gem-icon{font-size:2rem}
+
+#gem-menu{padding-top:6px}
+.cat-scroll{display:flex;gap:6px;padding:0 14px 8px;overflow-x:auto;scrollbar-width:none}
+.cat-scroll::-webkit-scrollbar{display:none}
+.cat-pill{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:50px;
+  border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--muted);
+  font-family:var(--fn-ar);font-size:0.74rem;cursor:pointer;transition:all var(--ease)}
+.cat-pill[aria-pressed="true"]{background:var(--gold-dim);border-color:var(--glass-b);color:var(--gold-lt)}
+.cat-n{font-size:0.62rem;opacity:0.6}
+.cat-pill:focus-visible{outline:2px solid var(--gold-lt);outline-offset:2px}
+
+/* multi panel: scrollable, searchable grid */
+#multi-panel{justify-content:flex-start;padding-top:max(24px,4vh);gap:10px}
+.mp-search{width:calc(100% - 40px);max-width:380px;padding:9px 14px;border-radius:50px;
+  border:1px solid var(--glass-b);background:rgba(255,255,255,0.05);color:var(--text);
+  font-family:var(--fn-ar);font-size:0.85rem;outline:none}
+.mp-search:focus{border-color:var(--gold)}
+.mp-search::placeholder{color:var(--muted)}
+.mp-grid{grid-template-columns:repeat(auto-fill,minmax(68px,1fr));max-width:420px;
+  flex:1 1 auto;min-height:120px;overflow-y:auto;align-content:start;padding:4px 20px 8px;
+  -webkit-mask-image:linear-gradient(to bottom,#000 92%,transparent);mask-image:linear-gradient(to bottom,#000 92%,transparent)}
+.mp-chip{padding:9px 4px}
+.mp-lbl{font-family:var(--fn-ar);font-size:0.66rem;letter-spacing:0;direction:rtl;text-align:center;line-height:1.3}
+.mp-empty{font-size:0.8rem;color:var(--muted)}
+.mp-actions{padding-bottom:max(16px,env(safe-area-inset-bottom))}
+/* full screen so 50 gems have room, even on short phones */
+#multi-panel{position:fixed;z-index:50}

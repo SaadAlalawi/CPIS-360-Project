@@ -2,42 +2,7 @@
    GEMS AR — معرض الأحجار الكريمة
    ════════════════════════════════════════════════════════════ */
 
-/* ── DATA ── */
-const GEMS = [
-  {id:'diamond',  nameEN:'Diamond',   nameAR:'الماس',    icon:'💎', color:'#B9F2FF',
-   desc:'أصلب مادة طبيعية — بنية كربونية مكعبة. يتألق بفضل قطعة البريليان التي تعكس الضوء بشكل مذهل.',
-   hardness:'10 / 10', density:'3.51 g/cm³', origin:'روسيا • بوتسوانا'},
-  {id:'ruby',     nameEN:'Ruby',      nameAR:'الياقوت',  icon:'🔴', color:'#E0115F',
-   desc:'كوراندوم أحمر نادر من أيونات الكروم. قطعته البيضاوية تُبرز عمق لونه الناري.',
-   hardness:'9 / 10',  density:'4.0 g/cm³',  origin:'ميانمار • تايلاند'},
-  {id:'emerald',  nameEN:'Emerald',   nameAR:'الزمرد',   icon:'💚', color:'#50C878',
-   desc:'بيريل أخضر نادر. قطعة الزمرد المستطيلة تُعرف بـ"الحديقة" بسبب شوائبها الجميلة.',
-   hardness:'7.5–8',   density:'2.76 g/cm³', origin:'كولومبيا • زامبيا'},
-  {id:'topaz',    nameEN:'Topaz',     nameAR:'التوباز',  icon:'🔷', color:'#48CAE4',
-   desc:'سيليكات الألومنيوم بألوان متعددة. قطعة الكوشن المُدوَّرة تعطيه إشراقة استثنائية.',
-   hardness:'8 / 10',  density:'3.5 g/cm³',  origin:'البرازيل • باكستان'},
-  {id:'agate',    nameEN:'Agate',     nameAR:'العقيق',   icon:'🟤', color:'#D4956A',
-   desc:'كوارتز بنطاقات لونية مذهلة. شريحته الدائرية تكشف التكوين الطبيعي الفريد.',
-   hardness:'6.5–7',   density:'2.6 g/cm³',  origin:'اليمن • البرازيل'},
-  {id:'gold',     nameEN:'Gold',      nameAR:'الذهب',    icon:'🥇', color:'#FFD700',
-   desc:'معدن ثمين خالد. السبيكة المشطوفة تعكس اللون الذهبي بأقصى بريق.',
-   hardness:'2.5 / 10', density:'19.3 g/cm³', origin:'الصين • أستراليا'},
-  {id:'silver',   nameEN:'Silver',    nameAR:'الفضة',    icon:'🥈', color:'#C8C8D0',
-   desc:'أعلى المعادن توصيلاً للكهرباء والحرارة. بريقه الفضي الناصع لا يُضاهى.',
-   hardness:'2.7 / 10', density:'10.5 g/cm³', origin:'المكسيك • البيرو'},
-  {id:'pearl',    nameEN:'Pearl',     nameAR:'اللؤلؤ',   icon:'🤍', color:'#F5F0E8',
-   desc:'جوهرة تتكوّن طبيعياً داخل المحار. بريقها الصدفي الفريد يجعلها رمز الأناقة.',
-   hardness:'2.5–4.5',  density:'2.7 g/cm³',  origin:'البحرين • اليابان'},
-  {id:'turquoise',nameEN:'Turquoise', nameAR:'الفيروز',  icon:'🩵', color:'#40B4B0',
-   desc:'فوسفات النحاس والألومنيوم بلونه الأزرق المميز. يُعدّ من أقدم الأحجار في التاريخ.',
-   hardness:'5–6',      density:'2.6 g/cm³',  origin:'إيران • مصر'},
-  {id:'opal',     nameEN:'Opal',      nameAR:'الأوبال',  icon:'🌈', color:'#E8C0F0',
-   desc:'حجر شبه كريم يعكس ألواناً قوس قزح. شكله القلبي يُجسّد جماله الأسطوري.',
-   hardness:'5.5–6.5',  density:'2.1 g/cm³',  origin:'أستراليا • إثيوبيا'},
-  {id:'sapphire', nameEN:'Sapphire',  nameAR:'الياقوت الأزرق', icon:'🔵', color:'#1E40AF',
-   desc:'كوراندوم أزرق ملكي. قطعة التريليون المثلثة تمنحه بريقاً استثنائياً.',
-   hardness:'9 / 10',   density:'4.0 g/cm³',  origin:'سريلانكا • كشمير'},
-];
+import { GEMS, CATEGORIES, gemIcon } from './gems.js';
 const gemById=(id)=>GEMS.find(g=>g.id===id);
 const modelURL=(id)=>`models/${id}.glb`;
 
@@ -133,18 +98,43 @@ function showStatus(msg){statusBadge.textContent=msg;statusBadge.classList.add('
   clearTimeout(_st);_st=setTimeout(()=>statusBadge.classList.remove('show'),5000)}
 
 /* ── BUILD MENUS ── */
+let activeCat='all';
+const inCat=(gem)=>activeCat==='all'||gem.cat===activeCat;
+const catLabel=(id)=>CATEGORIES.find(c=>c.id===id)?.label||'';
+
 function buildMenu(){
+  const cats=$('cat-scroll');
+  CATEGORIES.forEach(cat=>{
+    const n=cat.id==='all'?GEMS.length:GEMS.filter(g=>g.cat===cat.id).length;
+    const b=document.createElement('button');
+    b.type='button'; b.className='cat-pill'; b.dataset.cat=cat.id;
+    b.setAttribute('aria-pressed',String(cat.id===activeCat));
+    b.innerHTML=`${cat.label}<span class="cat-n">${n}</span>`;
+    b.addEventListener('click',()=>setCategory(cat.id));
+    cats.appendChild(b);
+  });
   const s=$('menu-scroll');
   GEMS.forEach((gem,i)=>{
     const c=document.createElement('button');
     c.type='button';
     c.className='gem-chip';
+    c.dataset.cat=gem.cat;
     c.setAttribute('aria-label',gem.nameAR);
     c.style.setProperty('--chip-color',gem.color);
-    c.innerHTML=`<span class="chip-em" aria-hidden="true">${gem.icon}</span><span class="chip-lbl">${gem.nameEN}</span><span class="chip-dot"></span>`;
+    c.innerHTML=`<span class="chip-em">${gemIcon(gem)}</span><span class="chip-lbl">${gem.nameEN}</span><span class="chip-dot"></span>`;
     c.addEventListener('click',()=>selectGem(i));
     s.appendChild(c);
   });
+}
+
+function setCategory(id,{jump=true}={}){
+  activeCat=id;
+  document.querySelectorAll('.cat-pill').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cat===id)));
+  document.querySelectorAll('.gem-chip').forEach((c,i)=>{c.hidden=!inCat(GEMS[i])});
+  if(!jump) return;
+  $('menu-scroll').scrollTo({left:0,behavior:'smooth'});
+  // jump to the first gem of the category unless the current one already belongs to it
+  if(mode!=='single'||!inCat(GEMS[activeIdx])) selectGem(GEMS.findIndex(inCat));
 }
 
 function buildMultiGrid(){
@@ -156,9 +146,20 @@ function buildMultiGrid(){
     c.id=`mp-${gem.id}`;
     c.setAttribute('aria-pressed','false');
     c.setAttribute('aria-label',gem.nameAR);
-    c.innerHTML=`<span class="mp-em" aria-hidden="true">${gem.icon}</span><span class="mp-lbl">${gem.nameEN}</span>`;
+    c.dataset.search=`${gem.nameAR} ${gem.nameEN} ${catLabel(gem.cat)}`.toLowerCase();
+    c.innerHTML=`<span class="mp-em">${gemIcon(gem)}</span><span class="mp-lbl">${gem.nameAR}</span>`;
     c.addEventListener('click',()=>toggleMultiSelect(gem.id));
     g.appendChild(c);
+  });
+  // normalise Arabic letter variants so "الماس" matches "ألماس" etc.
+  const norm=(s)=>s.toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/^ال|\sال/g,' ').trim();
+  $('mp-search').addEventListener('input',(e)=>{
+    const q=norm(e.target.value); let shown=0;
+    document.querySelectorAll('.mp-chip').forEach(c=>{
+      const hit=!q||norm(c.dataset.search).includes(q);
+      c.hidden=!hit; shown+=hit;
+    });
+    $('mp-empty').hidden=shown>0;
   });
 }
 
@@ -188,7 +189,7 @@ function setHotspotsForMode(layout=[]){
     btn.setAttribute('aria-label',`معلومات ${gem.nameAR}`);
     btn.style.setProperty('--chip',gem.color);
     btn.style.setProperty('--chip-glow',gem.color+'66');
-    btn.innerHTML=`<span class="hs-icon" aria-hidden="true">${gem.icon}</span><span class="hs-lbl">${gem.nameEN}</span>`;
+    btn.innerHTML=`<span class="hs-icon">${gemIcon(gem)}</span><span class="hs-lbl">${gem.nameEN}</span>`;
     btn.addEventListener('click',()=>{focusMerged(i); showInfoCard(gem);});
     mv.appendChild(btn);
   });
@@ -197,9 +198,9 @@ function setHotspotsForMode(layout=[]){
 /* ── INFO PANEL (bottom) ── */
 function fillInfoPanel(gem){
   const em=$('c-emoji');
-  em.textContent=gem.icon; em.style.background=gem.color+'22'; em.style.boxShadow=`0 0 18px ${gem.color}44`;
+  em.innerHTML=gemIcon(gem); em.style.background=gem.color+'22'; em.style.boxShadow=`0 0 18px ${gem.color}44`;
   $('c-en').textContent=gem.nameEN;
-  $('c-ar').textContent=gem.nameAR;
+  $('c-ar').textContent=`${gem.nameAR} • ${catLabel(gem.cat)}`;
   $('c-desc').textContent=gem.desc;
   $('s-hard').textContent=gem.hardness; $('s-hard').style.color=gem.color;
   $('s-dens').textContent=gem.density;
@@ -231,6 +232,7 @@ function selectGem(idx){
     c.classList.toggle('active',i===idx);
     c.setAttribute('aria-pressed',String(i===idx));
   });
+  if(!inCat(gem)) setCategory('all',{jump:false});
   $('menu-scroll').children[idx].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
   setLoading(gem.nameAR,10);
   setFloatLabel(gem.nameEN,gem.nameAR,gem.color);
@@ -239,7 +241,7 @@ function selectGem(idx){
   mv.autoRotate=true;
   mv.src=modelURL(gem.id);
   setHotspotsForMode();
-  hudLabel.textContent=`${gem.icon} ${gem.nameAR}`;
+  hudLabel.textContent=gem.nameAR;
   toast('✦ '+gem.nameAR);
   const h=$('hint');
   h.style.animation='none'; void h.offsetWidth;
@@ -251,7 +253,7 @@ function focusMerged(i){
   if(!mergedIds.length) return;
   mergedIdx=(i+mergedIds.length)%mergedIds.length;
   const gem=currentGem();
-  hudLabel.textContent=`${gem.icon} ${gem.nameAR}`;
+  hudLabel.textContent=gem.nameAR;
   flashGlow(gem.color);
 }
 
@@ -260,7 +262,7 @@ function showInfoCard(gem){
   if(!gem) return;
   quizCard.classList.remove('show');
   const em=$('ar-info-emoji');
-  em.textContent=gem.icon; em.style.color=gem.color;
+  em.innerHTML=gemIcon(gem); em.style.color=gem.color;
   $('ar-info-en').textContent=gem.nameEN; $('ar-info-en').style.color=gem.color;
   $('ar-info-ar').textContent=gem.nameAR;
   $('ar-info-desc').textContent=gem.desc; $('ar-info-desc').style.borderRightColor=gem.color;
@@ -278,7 +280,11 @@ function actInfo(){ showInfoCard(currentGem()); }
 function actGlow(){ flashGlow(currentGem()?.color||'#D4AF37'); }
 function actStep(dir){
   if(mode==='merged') focusMerged(mergedIdx+dir);
-  else selectGem((activeIdx+dir+GEMS.length)%GEMS.length);
+  else {
+    const list=GEMS.map((g,i)=>i).filter(i=>inCat(GEMS[i]));
+    const at=Math.max(0,list.indexOf(activeIdx));
+    selectGem(list[(at+dir+list.length)%list.length]);
+  }
 }
 hsInfo.addEventListener('click',actInfo);
 hsCycle.addEventListener('click',()=>actStep(1));
@@ -400,11 +406,11 @@ function submitAnswer(id){
   const r=$('quiz-result');
   if(id===correct.id){
     quizScore.right++;
-    r.textContent=`✓ أحسنت! إجابة صحيحة — ${correct.icon} ${correct.nameAR}`;
+    r.textContent=`✓ أحسنت! إجابة صحيحة — ${correct.nameAR}`;
     r.className='quiz-result ok';
     flashGlow(correct.color);
   } else {
-    r.textContent=`✗ خطأ — الإجابة الصحيحة: ${correct.icon} ${correct.nameAR}`;
+    r.textContent=`✗ خطأ — الإجابة الصحيحة: ${correct.nameAR}`;
     r.className='quiz-result err';
   }
   $('quiz-next').classList.add('show');
@@ -429,7 +435,10 @@ function enterAR(){
 }
 
 /* ── MULTI AR PANEL ── */
-function openMultiPanel(){$('multi-panel').classList.add('show')}
+function openMultiPanel(){
+  const s=$('mp-search'); s.value=''; s.dispatchEvent(new Event('input'));
+  $('multi-panel').classList.add('show');
+}
 function closeMultiPanel(){$('multi-panel').classList.remove('show')}
 
 function toggleMultiSelect(id){
@@ -462,7 +471,7 @@ async function launchMultiAR(){
   arInfoCard.classList.remove('show'); quizCard.classList.remove('show');
 
   mergeIcons.innerHTML=chosen.map((id,i)=>
-    (i>0?'<span class="plus">+</span>':'')+`<span>${gemById(id)?.icon||'◆'}</span>`).join('');
+    (i>0?'<span class="plus">+</span>':'')+gemIcon(gemById(id))).join('');
   mergeSub.textContent='جارٍ دمج النماذج…';
   mergeActions.hidden=true;
   mergeOverlay.classList.add('show');

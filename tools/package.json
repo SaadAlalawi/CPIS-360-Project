@@ -1,0 +1,7 @@
+{
+  "name": "gems-ar-tools",
+  "private": true,
+  "type": "module",
+  "scripts": { "build-models": "node build-models.mjs" },
+  "devDependencies": { "three": "0.160.0" }
+}
