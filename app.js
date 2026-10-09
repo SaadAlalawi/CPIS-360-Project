@@ -3,6 +3,7 @@
    ════════════════════════════════════════════════════════════ */
 
 import { GEMS, CATEGORIES, gemIcon } from './gems.js';
+import { initIdentify } from './identify.js';
 const gemById=(id)=>GEMS.find(g=>g.id===id);
 const modelURL=(id)=>`models/${id}.glb`;
 
@@ -551,4 +552,5 @@ $('info-toggle').addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' 
 
 buildMenu();
 buildMultiGrid();
+initIdentify({showGem:(i)=>{ if(!inCat(GEMS[i])) setCategory('all',{jump:false}); selectGem(i); }});
 selectGem(0);

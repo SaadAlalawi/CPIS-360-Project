@@ -153,3 +153,64 @@ const ICON_PATHS = {
 export function gemIcon(gem){
   return `<svg class="gem-icon" viewBox="0 0 24 24" style="color:${gem.color}" aria-hidden="true">${ICON_PATHS[gem.shape]||ICON_PATHS.facet}</svg>`;
 }
+
+/* ════════════════════════════════════════════════════════════
+   صفات التعرّف التقريبي بالصورة (ميزة تجريبية)
+   t: الشفافية  clear شفاف | trans شبه شفاف | opaque معتم
+   m: لمعة معدنية؟
+   p: النقش      solid لون واحد | bands خطوط/حلقات | flecks نقاط/بريق | play وميض ألوان
+   c: ألوان شائعة للحجر
+   ════════════════════════════════════════════════════════════ */
+const T=(t,m,p,...c)=>({t,m,p:p.split(' '),c});
+export const ID_TRAITS = {
+  diamond:     T('clear',0,'solid','#F2F6F8','#F5E6A8'),
+  ruby:        T('clear',0,'solid','#C2103F','#E0115F','#8E0E2E'),
+  sapphire:    T('clear',0,'solid','#1E40AF','#2F5BD0','#F2C230','#E87FB0'),
+  emerald:     T('clear',0,'solid','#2E9E5B','#50C878','#1F7A45'),
+  alexandrite: T('clear',0,'solid','#2E8B6E','#8A2D6B'),
+  topaz:       T('clear',0,'solid','#48CAE4','#F2A93B','#F0F0F0','#E89BB0'),
+  aquamarine:  T('clear',0,'solid','#7FD4E8','#A9DCE8'),
+  garnet:      T('clear',0,'solid','#7A1020','#9B1B30','#E87A1E','#3E9E3E'),
+  peridot:     T('clear',0,'solid','#9ACD32','#7FA82A'),
+  tanzanite:   T('clear',0,'solid','#5B4FC8','#4B3FA8'),
+  tourmaline:  T('clear',0,'solid bands','#E0457B','#2E8B57','#3A6FB0','#1A1A1A'),
+  spinel:      T('clear',0,'solid','#D81E5B','#E85A8A','#5A5AB8'),
+  morganite:   T('clear',0,'solid','#F4A6B8','#F2B8A0'),
+  zircon:      T('clear',0,'solid','#3FB4E0','#F2F6F8','#C8781E'),
+  kunzite:     T('clear',0,'solid','#E8A0D8','#D8A8E8'),
+  iolite:      T('clear',0,'solid','#5A6FB8','#6A6A9A'),
+  fluorite:    T('clear',0,'solid bands','#9B7FD4','#4FB88A','#5A9AD8','#F2E07A'),
+  moldavite:   T('clear',0,'solid','#5E8C31','#4A6E24'),
+  amethyst:    T('clear',0,'solid','#9966CC','#7A4FB0','#C8A8E8'),
+  citrine:     T('clear',0,'solid','#E4A010','#F2C84A','#C8781E'),
+  rockcrystal: T('clear',0,'solid','#F2F6F8'),
+  smokyquartz: T('clear',0,'solid','#8A7058','#5A4838'),
+  rosequartz:  T('trans',0,'solid','#F7B8C8','#EBC0C8'),
+  agate:       T('trans',0,'bands','#D4956A','#8A8A9A','#4A70A8','#C86A3A'),
+  carnelian:   T('trans',0,'solid','#D0501F','#B83A1A','#E8823A'),
+  onyx:        T('opaque',0,'solid bands','#1C1C1E'),
+  tigerseye:   T('opaque',0,'bands','#C08A2E','#8A5A1E'),
+  jasper:      T('opaque',0,'solid bands flecks','#B04030','#8A4A2A','#C8A050','#4A7A4A'),
+  aventurine:  T('opaque',0,'flecks','#3E9E5C','#2E7A48'),
+  turquoise:   T('opaque',0,'solid bands','#40B4B0','#5EC8D8','#4FA88A'),
+  opal:        T('trans',0,'play','#F2F2F2','#E8C0F0','#2A2A3A','#E8823A'),
+  lapis:       T('opaque',0,'flecks','#2A4BB0','#1E3A9A'),
+  jade:        T('trans',0,'solid','#4CA36B','#2E8B57','#A8C8A0','#E8E8D8'),
+  malachite:   T('opaque',0,'bands','#1E9C62','#0B6A3A'),
+  moonstone:   T('trans',0,'play solid','#DCE6F0','#F2EEE6','#C8B8A8'),
+  sunstone:    T('trans',0,'flecks','#E8833A','#D8602A'),
+  labradorite: T('opaque',0,'play','#5A6A7A','#3A4A58'),
+  amazonite:   T('opaque',0,'bands solid','#3FB8A8','#5AC8B0'),
+  rhodochrosite:T('opaque',0,'bands','#E05A7A','#F08AA0'),
+  larimar:     T('opaque',0,'bands','#7EC8E3','#A8D8E8'),
+  obsidian:    T('opaque',0,'solid','#1A1A20','#3A2A28'),
+  pearl:       T('opaque',0,'solid','#F5F0E8','#EDE0D0','#2A2A30'),
+  amber:       T('trans',0,'solid','#E8A317','#C86A10','#F2C84A'),
+  coral:       T('opaque',0,'solid','#E8574A','#F08A7A','#C83A2A'),
+  gold:        T('opaque',1,'solid','#FFD700','#D4AF37'),
+  silver:      T('opaque',1,'solid','#C8C8D0','#B0B0B8'),
+  platinum:    T('opaque',1,'solid','#E5E4E2','#C8C8C8'),
+  copper:      T('opaque',1,'solid','#C87533','#B0602A'),
+  pyrite:      T('opaque',1,'solid','#C9A93A','#B8A040'),
+  hematite:    T('opaque',1,'solid','#5A5A64','#3A3A42'),
+};

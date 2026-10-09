@@ -156,6 +156,11 @@
       <div class="fl-ar" id="fl-ar">—</div>
     </div>
 
+    <button class="btn id-fab" id="id-open" type="button" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      <span>تعرّف بصورة</span><span class="id-fab-beta">تجريبي</span>
+    </button>
+
     <div id="hint">↕ اسحب للتدوير • قرص للتكبير</div>
     <div id="status-badge"></div>
 
@@ -208,6 +213,73 @@
   <div id="gem-menu">
     <div class="cat-scroll" id="cat-scroll" role="toolbar" aria-label="التصنيفات"></div>
     <div class="menu-scroll" id="menu-scroll"></div>
+  </div>
+</div>
+
+
+<!-- IDENTIFY BY PHOTO (experimental) -->
+<div id="id-panel" role="dialog" aria-modal="true" aria-labelledby="id-title">
+  <div class="id-inner">
+    <div class="id-head">
+      <div><div class="id-title" id="id-title">تعرّف على الحجر</div><span class="id-beta">تجريبي</span></div>
+      <button class="ar-card-close id-close" id="id-close" type="button" aria-label="إغلاق">×</button>
+    </div>
+
+    <div class="id-warn" role="note">
+      <strong>⚠️ ميزة تجريبية للتعليم والترفيه فقط</strong>
+      النتيجة تخمين تقريبي مبني على لون الصورة وإجاباتك، وقد تكون خاطئة تماماً.
+      هي <b>ليست</b> فحصاً ولا توثيقاً ولا تقييماً للحجر أو لأصالته أو لقيمته،
+      و<b>لا يجوز الاعتماد عليها</b> في بيع أو شراء أو أي قرار.
+      لمعرفة نوع الحجر وأصالته راجع مختبراً معتمداً للأحجار الكريمة.
+    </div>
+
+    <div id="id-gate">
+      <label class="id-ack"><input type="checkbox" id="id-ack">
+        <span>قرأت التنبيه، وأفهم أن النتيجة تجريبية ولا يُعتمد عليها، وأن استخدامها على مسؤوليتي.</span></label>
+      <button class="btn btn-multi id-cta" id="id-ack-go" type="button" disabled>متابعة</button>
+    </div>
+
+    <div id="id-body" hidden>
+      <section class="id-step">
+        <div class="id-step-t"><span class="id-n">1</span> صورة الحجر</div>
+        <label class="btn id-pick" for="id-file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <span id="id-pick-lbl">التقط أو اختر صورة</span>
+        </label>
+        <input type="file" id="id-file" accept="image/*" capture="environment" hidden>
+        <div class="id-privacy">🔒 تُحلَّل الصورة داخل جهازك فقط، ولا تُرفع ولا تُحفظ.</div>
+        <div id="id-photo-wrap" hidden>
+          <canvas id="id-canvas" aria-label="الصورة — اضغط على الحجر لتحديد لونه"></canvas>
+          <div class="id-hint">اضغط على الحجر في الصورة لتحديد لونه بدقة (تجنّب الخلفية واللمعات).</div>
+          <div class="id-color-row" id="id-color-row" hidden><span class="id-swatch" id="id-swatch"></span> اللون المقروء</div>
+        </div>
+        <div class="id-msg" id="id-msg" hidden></div>
+      </section>
+
+      <section class="id-step">
+        <div class="id-step-t"><span class="id-n">2</span> أسئلة تساعد التخمين <span class="id-opt">(اختيارية)</span></div>
+        <div class="id-q">هل يمرّ الضوء من خلاله؟</div>
+        <div class="id-opts" data-q="t" role="group"><button type="button" data-v="clear" aria-pressed="false">شفاف</button><button type="button" data-v="trans" aria-pressed="false">شبه شفاف</button><button type="button" data-v="opaque" aria-pressed="false">معتم</button><button type="button" data-v="?" aria-pressed="true">لا أعرف</button></div>
+        <div class="id-q">هل لمعته معدنية مثل الذهب أو الفضة؟</div>
+        <div class="id-opts" data-q="m" role="group"><button type="button" data-v="yes" aria-pressed="false">نعم</button><button type="button" data-v="no" aria-pressed="false">لا</button><button type="button" data-v="?" aria-pressed="true">لا أعرف</button></div>
+        <div class="id-q">شكل سطحه أو ألوانه؟</div>
+        <div class="id-opts" data-q="p" role="group"><button type="button" data-v="solid" aria-pressed="false">لون واحد</button><button type="button" data-v="bands" aria-pressed="false">خطوط أو حلقات</button><button type="button" data-v="flecks" aria-pressed="false">نقاط أو بريق</button><button type="button" data-v="play" aria-pressed="false">وميض ألوان</button><button type="button" data-v="?" aria-pressed="true">لا أعرف</button></div>
+      </section>
+
+      <button class="btn btn-multi id-cta" id="id-go" type="button" disabled>اقترح أحجاراً مشابهة</button>
+
+      <section id="id-results" hidden>
+        <div class="id-step-t">أحجار قد تشبهه — من بين الأحجار الخمسين فقط</div>
+        <div class="id-weak" id="id-weak" hidden>لم نجد حجراً قريباً بوضوح؛ هذه مجرد أقرب الاحتمالات.</div>
+        <div id="id-results-list"></div>
+        <p class="id-foot">
+          هذه احتمالات تقريبية وليست حكماً. أحجار كثيرة تتشابه في الصورة — مثل الماس والزجاج والزركونيا،
+          أو الياقوت والإسبينل والغارنيت — ولا تُميَّز إلا بأجهزة المختبر. وقد يكون حجرك غير موجود في القائمة أصلاً،
+          أو مقلّداً أو صناعياً أو مُعالَجاً.
+        </p>
+        <button class="btn id-cta" id="id-reset" type="button">ابدأ من جديد</button>
+      </section>
+    </div>
   </div>
 </div>
 
