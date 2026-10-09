@@ -27,7 +27,7 @@
   <div id="topbar">
     <div>
       <div class="tb-logo">GEMS AR</div>
-      <div class="tb-sub">معرض الأحجار الكريمة • 50 حجراً</div>
+      <div class="tb-sub">معرض الأحجار الكريمة • <span id="gem-count">100 حجر</span></div>
     </div>
     <div class="tb-actions">
       <button class="btn btn-quiz" id="quiz-btn" title="اختبار الأحجار">
@@ -212,7 +212,11 @@
   <!-- GEM MENU -->
   <div id="gem-menu">
     <div class="cat-scroll" id="cat-scroll" role="toolbar" aria-label="التصنيفات"></div>
+    <div class="menu-search-row" id="menu-search-row" hidden>
+      <input type="search" id="menu-search" class="mp-search" placeholder="ابحث بالعربي أو الإنجليزي…" aria-label="ابحث عن حجر" autocomplete="off">
+    </div>
     <div class="menu-scroll" id="menu-scroll"></div>
+    <div class="menu-empty" id="menu-empty" hidden>لا يوجد حجر بهذا الاسم</div>
   </div>
 </div>
 
@@ -269,7 +273,7 @@
       <button class="btn btn-multi id-cta" id="id-go" type="button" disabled>اقترح أحجاراً مشابهة</button>
 
       <section id="id-results" hidden>
-        <div class="id-step-t">أحجار قد تشبهه — من بين الأحجار الخمسين فقط</div>
+        <div class="id-step-t">أحجار قد تشبهه — من بين أحجار المعرض فقط</div>
         <div class="id-weak" id="id-weak" hidden>لم نجد حجراً قريباً بوضوح؛ هذه مجرد أقرب الاحتمالات.</div>
         <div id="id-results-list"></div>
         <p class="id-foot">

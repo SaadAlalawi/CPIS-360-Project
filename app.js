@@ -2,7 +2,7 @@
    GEMS AR — معرض الأحجار الكريمة
    ════════════════════════════════════════════════════════════ */
 
-import { GEMS, CATEGORIES, gemIcon } from './gems.js';
+import { GEMS, CATEGORIES, gemIcon, normAr } from './gems.js';
 import { initIdentify } from './identify.js';
 const gemById=(id)=>GEMS.find(g=>g.id===id);
 const modelURL=(id)=>`models/${id}.glb`;
@@ -105,6 +105,12 @@ const catLabel=(id)=>CATEGORIES.find(c=>c.id===id)?.label||'';
 
 function buildMenu(){
   const cats=$('cat-scroll');
+  const sb=document.createElement('button');
+  sb.type='button'; sb.className='cat-pill cat-search'; sb.id='menu-search-btn';
+  sb.setAttribute('aria-label','بحث'); sb.setAttribute('aria-expanded','false');
+  sb.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>';
+  sb.addEventListener('click',()=>toggleMenuSearch());
+  cats.appendChild(sb);
   CATEGORIES.forEach(cat=>{
     const n=cat.id==='all'?GEMS.length:GEMS.filter(g=>g.cat===cat.id).length;
     const b=document.createElement('button');
@@ -120,6 +126,7 @@ function buildMenu(){
     c.type='button';
     c.className='gem-chip';
     c.dataset.cat=gem.cat;
+    c.dataset.search=normAr(`${gem.nameAR} ${gem.nameEN}`);
     c.setAttribute('aria-label',gem.nameAR);
     c.style.setProperty('--chip-color',gem.color);
     c.innerHTML=`<span class="chip-em">${gemIcon(gem)}</span><span class="chip-lbl">${gem.nameEN}</span><span class="chip-dot"></span>`;
@@ -128,10 +135,37 @@ function buildMenu(){
   });
 }
 
+/* ── main-menu search ── */
+let menuQuery='';
+function applyMenuFilter(){
+  let shown=0;
+  document.querySelectorAll('.gem-chip').forEach((c,i)=>{
+    const hit=menuQuery ? c.dataset.search.includes(menuQuery) : inCat(GEMS[i]);
+    c.hidden=!hit; shown+=hit;
+  });
+  $('menu-empty').hidden=shown>0;
+}
+function toggleMenuSearch(force){
+  const row=$('menu-search-row'), open=force??row.hidden;
+  row.hidden=!open; $('menu-search-btn').setAttribute('aria-expanded',String(open));
+  if(open){ $('menu-search').focus(); }
+  else { $('menu-search').value=''; menuQuery=''; applyMenuFilter(); }
+}
+$('menu-search').addEventListener('input',(e)=>{
+  menuQuery=normAr(e.target.value);
+  applyMenuFilter();
+  $('menu-scroll').scrollTo({left:0});
+});
+$('menu-search').addEventListener('keydown',(e)=>{
+  if(e.key==='Escape') toggleMenuSearch(false);
+  if(e.key==='Enter'){ const first=[...document.querySelectorAll('.gem-chip')].find(c=>!c.hidden); first?.click(); }
+});
+
 function setCategory(id,{jump=true}={}){
+  if(menuQuery) toggleMenuSearch(false);
   activeCat=id;
   document.querySelectorAll('.cat-pill').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cat===id)));
-  document.querySelectorAll('.gem-chip').forEach((c,i)=>{c.hidden=!inCat(GEMS[i])});
+  applyMenuFilter();
   if(!jump) return;
   $('menu-scroll').scrollTo({left:0,behavior:'smooth'});
   // jump to the first gem of the category unless the current one already belongs to it
@@ -147,17 +181,15 @@ function buildMultiGrid(){
     c.id=`mp-${gem.id}`;
     c.setAttribute('aria-pressed','false');
     c.setAttribute('aria-label',gem.nameAR);
-    c.dataset.search=`${gem.nameAR} ${gem.nameEN} ${catLabel(gem.cat)}`.toLowerCase();
+    c.dataset.search=normAr(`${gem.nameAR} ${gem.nameEN} ${catLabel(gem.cat)}`);
     c.innerHTML=`<span class="mp-em">${gemIcon(gem)}</span><span class="mp-lbl">${gem.nameAR}</span>`;
     c.addEventListener('click',()=>toggleMultiSelect(gem.id));
     g.appendChild(c);
   });
-  // normalise Arabic letter variants so "الماس" matches "ألماس" etc.
-  const norm=(s)=>s.toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/^ال|\sال/g,' ').trim();
   $('mp-search').addEventListener('input',(e)=>{
-    const q=norm(e.target.value); let shown=0;
+    const q=normAr(e.target.value); let shown=0;
     document.querySelectorAll('.mp-chip').forEach(c=>{
-      const hit=!q||norm(c.dataset.search).includes(q);
+      const hit=!q||c.dataset.search.includes(q);
       c.hidden=!hit; shown+=hit;
     });
     $('mp-empty').hidden=shown>0;
@@ -550,6 +582,7 @@ $('mp-launch-btn').addEventListener('click',launchMultiAR);
 $('info-toggle').addEventListener('click',toggleInfo);
 $('info-toggle').addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleInfo()}});
 
+$('gem-count').textContent=`${GEMS.length} حجر`;
 buildMenu();
 buildMultiGrid();
 initIdentify({showGem:(i)=>{ if(!inCat(GEMS[i])) setCategory('all',{jump:false}); selectGem(i); }});

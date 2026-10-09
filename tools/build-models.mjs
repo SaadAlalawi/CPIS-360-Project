@@ -34,6 +34,11 @@ const superellipse = (n, p, a=1, b=1) => Array.from({length:n},(_,i)=>{
 const pear = (n=18) => Array.from({length:n},(_,i)=>{const t=i/n*Math.PI*2; return [Math.cos(t), 0.72*Math.sin(t)*Math.abs(Math.sin(t/2))**1.1];});
 const marquise = (n=16) => Array.from({length:n},(_,i)=>{const t=i/n*Math.PI*2; return [Math.cos(t), 0.5*Math.sin(t)*Math.abs(Math.sin(t))**0.35];});
 /** rectangle w×h with corners cut by c (an octagon); c=0 → plain rectangle */
+/** rounded triangle (trillion cut) */
+const trillion = (n=18) => Array.from({length:n},(_,i)=>{
+  const t=i/n*Math.PI*2, phi=((t%(2*Math.PI/3))+2*Math.PI/3)%(2*Math.PI/3)-Math.PI/3;
+  const r=0.82*(0.5/Math.cos(phi))+0.18*0.7; return [r*Math.cos(t), r*Math.sin(t)];
+});
 const octRect = (w, h, c) => c>0
   ? [[w,-h+c],[w,h-c],[w-c,h],[-w+c,h],[-w,h-c],[-w,-h+c],[-w+c,-h],[w-c,-h]]
   : [[w,-h],[w,h],[-w,h],[-w,-h]];
@@ -110,6 +115,21 @@ const CUTS = {
   tumble:   (sx=1,sy=0.62,sz=0.8,seed=1) => pebble(sx,sy,sz,seed),
   drop:     () => pebble(1,0.7,0.78,7,true),
   rough:    (seed=3) => shard(seed),
+  trillion: () => ringSolid(trillion(18), BRILLIANT),
+  /* hexagonal prism with flat ends (beryl, selenite wand) */
+  prism:    (len=1.6) => ringSolid(circle(6), [{s:1,y:len/2},{s:1,y:-len/2}]),
+  /* flat bladed crystal (kyanite) */
+  blade:    () => ringSolid(octRect(1,0.24,0.08), [{s:0.94,y:0.07},{s:1,y:0.04},{s:1,y:-0.04},{s:0.94,y:-0.07}]),
+  /* wedge-tipped prism (danburite) */
+  wedge:    () => { const g=ringSolid(octRect(0.55,0.4,0.12), [{s:0.25,y:1},{s:1,y:0.5},{s:1,y:-0.9},{s:0.96,y:-0.95}]); return g; },
+  /* flat slice with a finely subdivided face, so ring/spiral patterns show */
+  disc:     (h=0.32) => {
+    const top=new THREE.RingGeometry(0.0001,1,72,32); top.rotateX(-Math.PI/2); top.translate(0,h/2,0);
+    const bot=new THREE.RingGeometry(0.0001,1,72,32); bot.rotateX(Math.PI/2);  bot.translate(0,-h/2,0);
+    const side=new THREE.CylinderGeometry(1,1,h,72,1,true);
+    const parts=[top,bot,side]; parts.forEach(g=>g.deleteAttribute('uv'));
+    return mergeGeometries(parts);
+  },
 };
 
 function cabochon(a,b,h,seg=64,rings=24){
@@ -169,6 +189,24 @@ function cluster(){
 }
 
 /** two interpenetrating cubes — how pyrite usually grows */
+/** stepped "hopper" crystal — nested square frames (bismuth) */
+function hopper(){
+  const parts=[];
+  for(let k=0;k<6;k++){
+    const s=1-k*0.16, w=0.13, y=-k*0.11;
+    for(const [x,z,sx,sz] of [[0,s/2-w/2,s,w],[0,-s/2+w/2,s,w],[s/2-w/2,0,w,s],[-s/2+w/2,0,w,s]]){
+      const b=new THREE.BoxGeometry(sx,0.12,sz); b.deleteAttribute('uv'); b.translate(x,y,z); parts.push(b);
+    }
+  }
+  const base=new THREE.BoxGeometry(0.2,0.12,0.2); base.deleteAttribute('uv'); base.translate(0,-0.66,0); parts.push(base);
+  return mergeGeometries(parts);
+}
+
+function galenaCubes(){
+  const mk=(s,x,y,z,ry)=>{const b=new THREE.BoxGeometry(s,s,s); b.deleteAttribute('uv'); b.rotateY(ry); b.translate(x,y,z); return b.toNonIndexed();};
+  return mergeGeometries([mk(1,0,0,0,0.2),mk(0.62,0.62,-0.19,0.25,0.6),mk(0.45,-0.55,-0.27,-0.3,-0.3)]);
+}
+
 function pyriteCubes(){
   const a=new THREE.BoxGeometry(1,1,1), b=new THREE.BoxGeometry(0.7,0.7,0.7);
   b.rotateY(0.5); b.rotateX(0.3); b.translate(0.42,0.18,0.3);
@@ -200,6 +238,16 @@ const PATTERNS = {
   mottled: ([c1,c2,c3])=>(p)=>{const n=Math.sin(p.x*7+Math.sin(p.z*5))*Math.sin(p.z*6+p.y*4)+0.4*Math.sin(p.y*11+p.x*3); return n>0.55?c3:mix(c1,c2,(n+1)/2);},
   web:     ([c1,c2])=>(p)=>{const t=Math.abs(Math.sin(p.x*8+Math.sin(p.z*5)*2)*Math.sin(p.z*7+Math.sin(p.x*4)*2)); return mix(c2,c1,Math.min(1,t*2.2));},
   streaks: ([c1,c2],f=30)=>(p)=>{const t=Math.sin(p.x*f*0.3+p.z*f+Math.sin(p.x*3)*2); return t>0.85?c2:c1;},
+  /* cat's eye: one bright line across the dome */
+  eye:     ([c1,c2])=>(p)=>mix(c1,c2,Math.exp(-(((p.z)/0.08)**2))*Math.max(0,p.y+0.2)),
+  /* two colours meeting in the middle (ametrine) */
+  bicolor: ([c1,c2])=>(p)=>mix(c1,c2,1/(1+Math.exp(-p.x*9))),
+  /* tree rings + bark rim (petrified wood) */
+  tree:    ([c1,c2,bark])=>(p)=>{const r=Math.hypot(p.x,p.z); if(r>0.9) return bark; return mix(c1,c2,smooth(Math.sin(r*34+Math.sin(Math.atan2(p.z,p.x)*5)*0.4)));},
+  /* ammonite spiral chambers */
+  spiral:  ([c1,c2,c3])=>(p)=>{const r=Math.hypot(p.x,p.z)+1e-3, a=Math.atan2(p.z,p.x); const t=Math.sin(Math.log(r)*9-a*1.43); const u=Math.sin(a*14); return t>0.3?mix(c2,c3,(u+1)/2):mix(c1,c2,(t+1)/1.3);},
+  /* Widmanstätten pattern: three families of lines at 60° */
+  widman:  ([c1,c2])=>(p)=>{const d=[0,Math.PI/3,2*Math.PI/3].map(a=>Math.abs(Math.sin((p.x*Math.cos(a)+p.z*Math.sin(a))*22))); return Math.min(...d)<0.18?c2:c1;},
 };
 const smooth=t=>{const u=(t+1)/2; return u*u*(3-2*u);};
 const mix=(a,b,t)=>a.clone().lerp(b,t);
@@ -268,6 +316,62 @@ const MODELS = {
   copper:      ()=>[CUTS.tumble(1,0.55,0.75,9), metal('#D07A45',0.3)],
   pyrite:      ()=>[pyriteCubes(),   metal('#D4B44A',0.22)],
   hematite:    ()=>[CUTS.tumble(1,0.6,0.8,6), metal('#6A6A74',0.12)],
+
+  /* ── second batch ── */
+  padparadscha:()=>[CUTS.cushion(),  clear('#F59B7A',1.77,{dist:0.15})],
+  redberyl:    ()=>[CUTS.emerald(),  clear('#C8204A',1.57,{dist:0.06})],
+  paraiba:     ()=>[CUTS.oval(),     clear('#2EE0D0',1.62,{dist:0.2})],
+  benitoite:   ()=>[CUTS.trillion(), clear('#3A6AE8',1.78,{dist:0.08})],
+  taaffeite:   ()=>[CUTS.round(),    clear('#B88AC8',1.72,{dist:0.15})],
+  grandidierite:()=>[CUTS.oval(),    clear('#5AC8B0',1.6,{dist:0.1,roughness:0.05})],
+  demantoid:   ()=>[CUTS.round(),    clear('#3EB04A',1.88,{dist:0.08})],
+  tsavorite:   ()=>[CUTS.oval(),     clear('#2EAA4A',1.74,{dist:0.07})],
+  hiddenite:   ()=>[CUTS.emerald(),  clear('#7AC87A',1.66,{dist:0.2})],
+  heliodor:    ()=>[CUTS.prism(1.6), clear('#F2D03A',1.57,{dist:0.2})],
+  chrysoberyl: ()=>{const g=CUTS.cab(1,0.75,0.6); paint(g,PATTERNS.eye([C('#B8A82A'),C('#FFF6C8')])); return [g,polished('#ffffff',{vertexColors:true,roughness:0.12,transmission:0.25,ior:1.75,thickness:0.05})];},
+  andalusite:  ()=>[CUTS.radiant(),  clear('#8A7A3A',1.64,{dist:0.08})],
+  titanite:    ()=>[CUTS.pear(),     clear('#B8C83A',1.95,{dist:0.12})],
+  kyanite:     ()=>[CUTS.blade(),    clear('#3A6AC8',1.72,{transmission:0.6,roughness:0.08,dist:0.06})],
+  apatite:     ()=>[CUTS.oval(),     clear('#2EC8C8',1.64,{dist:0.1})],
+  diopside:    ()=>[CUTS.round(),    clear('#1E7A3A',1.68,{dist:0.05})],
+  danburite:   ()=>[CUTS.wedge(),    clear('#F2F2E8',1.63,{dist:1})],
+  moissanite:  ()=>[CUTS.round(),    clear('#F2F6F4',2.65,{dist:1})],
+  imperialtopaz:()=>[CUTS.pear(),    clear('#E88A3A',1.63,{dist:0.12})],
+  sphalerite:  ()=>[CUTS.round(),    clear('#C87A1E',2.37,{dist:0.08})],
+  fireopal:    ()=>[CUTS.oval(),     clear('#F06A1E',1.45,{dist:0.1})],
+  celestite:   ()=>[cluster(),       clear('#A8D0F0',1.62,{dist:0.3})],
+  selenite:    ()=>{const g=CUTS.prism(3.2); return [g,clear('#F4F2EA',1.52,{dist:1,roughness:0.12})];},
+
+  chrysoprase: ()=>[CUTS.cab(),      clear('#5ACB7A',1.54,{transmission:0.35,roughness:0.15,dist:0.04})],
+  bluechalcedony:()=>[CUTS.roundcab(),clear('#9AB8D8',1.54,{transmission:0.45,roughness:0.15,dist:0.06})],
+  bloodstone:  ()=>{const g=CUTS.cab(); paint(g,PATTERNS.flecks([C('#1E3A2A'),C('#C8281E')],0.06)); return [g,polished('#ffffff',{vertexColors:true})];},
+  ametrine:    ()=>{const g=CUTS.emerald(); paint(g,PATTERNS.bicolor([C('#B07AC8'),C('#E8C04A')])); const m=clear('#ffffff',1.54,{dist:2}); m.vertexColors=true; m.color.set('#ffffff'); return [g,m];},
+  prasiolite:  ()=>[CUTS.oval(),     clear('#A8D88A',1.54,{dist:0.3})],
+  rutilatedquartz:()=>{const g=CUTS.roundcab(); paint(g,PATTERNS.streaks([C('#F4F0E4'),C('#C8902A')],38)); const m=clear('#ffffff',1.54,{dist:2,transmission:0.75}); m.vertexColors=true; m.color.set('#ffffff'); return [g,m];},
+  sardonyx:    ()=>{const g=CUTS.cab(); paint(g,PATTERNS.stripes([C('#6A2010'),C('#B8502A'),C('#F2ECE4')],11)); return [g,polished('#ffffff',{vertexColors:true})];},
+  petrifiedwood:()=>{const g=CUTS.disc(0.3); paint(g,PATTERNS.tree([C('#7A4A2A'),C('#C8905A'),C('#3A2A1E')])); return [g,polished('#ffffff',{vertexColors:true,roughness:0.3})];},
+
+  blackopal:   ()=>[CUTS.cab(1,0.75,0.45), polished('#14142A',{roughness:0.08,iridescence:1,iridescenceIOR:2.0,iridescenceThicknessRange:[200,1000]})],
+  prehnite:    ()=>[CUTS.roundcab(), clear('#B8D88A',1.63,{transmission:0.5,roughness:0.15,dist:0.06})],
+  chrysocolla: ()=>{const g=CUTS.cab(); paint(g,PATTERNS.web([C('#2EA8B8'),C('#1E6A5A')])); return [g,polished('#ffffff',{vertexColors:true,roughness:0.3})];},
+  sodalite:    ()=>{const g=CUTS.cab(); paint(g,PATTERNS.streaks([C('#2A3E8A'),C('#E8ECF2')],24)); return [g,polished('#ffffff',{vertexColors:true})];},
+  charoite:    ()=>{const g=CUTS.cab(); paint(g,PATTERNS.stripes([C('#4A1E6A'),C('#9A5AC0'),C('#E0D0F0')],16)); return [g,polished('#ffffff',{vertexColors:true})];},
+  sugilite:    ()=>{const g=CUTS.cab(); paint(g,PATTERNS.mottled([C('#3A1A4A'),C('#7A2A8A'),C('#B060C0')])); return [g,polished('#ffffff',{vertexColors:true})];},
+  howlite:     ()=>{const g=CUTS.tumble(1,0.62,0.82,12); paint(g,PATTERNS.web([C('#EEEEEA'),C('#6A6A6A')])); return [g,polished('#ffffff',{vertexColors:true,roughness:0.3})];},
+  serpentine:  ()=>{const g=CUTS.tumble(1,0.6,0.8,13); paint(g,PATTERNS.mottled([C('#2E4A22'),C('#6A8A4A'),C('#B8C88A')])); return [g,polished('#ffffff',{vertexColors:true})];},
+  rhodonite:   ()=>{const g=CUTS.cab(); paint(g,PATTERNS.web([C('#D86A7A'),C('#1E1E1E')])); return [g,polished('#ffffff',{vertexColors:true})];},
+  unakite:     ()=>{const g=CUTS.tumble(1,0.6,0.8,14); paint(g,PATTERNS.mottled([C('#4A7A4A'),C('#8AB07A'),C('#E8988A')])); return [g,polished('#ffffff',{vertexColors:true})];},
+  smithsonite: ()=>[CUTS.tumble(1,0.55,0.85,15), clear('#8AC8C8',1.62,{transmission:0.35,roughness:0.25,dist:0.05})],
+  azurite:     ()=>{const g=CUTS.cab(); paint(g,PATTERNS.rings([C('#0E2470'),C('#2A50C8')],18)); return [g,polished('#ffffff',{vertexColors:true})];},
+
+  jet:         ()=>[CUTS.tumble(1,0.55,0.75,16), polished('#101010',{roughness:0.1})],
+  ammolite:    ()=>{const g=CUTS.disc(0.28); paint(g,PATTERNS.spiral([C('#3A2418'),C('#B8502A'),C('#2E9A5A')])); return [g,polished('#ffffff',{vertexColors:true,iridescence:0.45,iridescenceIOR:1.6,iridescenceThicknessRange:[300,800]})];},
+  motherofpearl:()=>[CUTS.cab(1,0.8,0.16), polished('#F2EEF0',{roughness:0.25,iridescence:1,iridescenceIOR:1.5,iridescenceThicknessRange:[250,600]})],
+
+  palladium:   ()=>[CUTS.ingot(),    metal('#CED0CE',0.16)],
+  meteorite:   ()=>{const g=CUTS.cab(1,0.8,0.14); paint(g,PATTERNS.widman([C('#C8C8D0'),C('#6A6A72')])); return [g,new THREE.MeshStandardMaterial({color:'#ffffff',vertexColors:true,metalness:1,roughness:0.25})];},
+  bismuth:     ()=>[hopper(), new THREE.MeshPhysicalMaterial({color:'#D8C8E0',metalness:1,roughness:0.15,iridescence:1,iridescenceIOR:2.2,iridescenceThicknessRange:[200,900]})],
+  galena:      ()=>[galenaCubes(),   metal('#8A8A94',0.22)],
 };
 
 /* ─────────────── export ─────────────── */

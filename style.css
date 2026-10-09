@@ -480,3 +480,13 @@ body.ar-active .id-fab{display:none}
 .id-view{grid-area:btn;justify-self:end;padding:5px 10px;font-size:0.72rem}
 .id-foot{font-size:0.74rem;line-height:1.75;color:var(--muted);padding:10px 12px;border-radius:10px;
   border-right:2px solid rgba(255,170,70,0.6);background:rgba(255,255,255,0.03)}
+
+/* ── main-menu search ── */
+.cat-search{padding:4px 9px}
+.cat-search svg{width:14px;height:14px}
+.cat-search[aria-expanded="true"]{background:var(--gold-dim);border-color:var(--glass-b);color:var(--gold-lt)}
+.menu-search-row{padding:0 14px 8px}
+.menu-search-row[hidden]{display:none}
+.menu-search-row .mp-search{width:100%;max-width:none;padding:7px 14px;font-size:0.82rem}
+.menu-empty{padding:14px;text-align:center;font-size:0.78rem;color:var(--muted)}
+.menu-empty[hidden]{display:none}
