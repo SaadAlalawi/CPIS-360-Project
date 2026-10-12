@@ -111,20 +111,7 @@
         <div class="ar-card-en" id="ar-info-en">—</div>
         <div class="ar-card-ar" id="ar-info-ar">—</div>
         <p class="ar-card-desc" id="ar-info-desc">—</p>
-        <div class="ar-card-stats">
-          <div class="ar-stat">
-            <span class="ar-s-lbl">صلابة موس </span>
-            <span class="ar-s-val" id="ar-info-hard">—</span>
-          </div>
-          <div class="ar-stat">
-            <span class="ar-s-lbl">الكثافة</span>
-            <span class="ar-s-val" id="ar-info-dens">—</span>
-          </div>
-          <div class="ar-stat">
-            <span class="ar-s-lbl">المنشأ</span>
-            <span class="ar-s-val" id="ar-info-orig">—</span>
-          </div>
-        </div>
+        <div class="ar-card-stats c-stats" id="ar-info-stats"></div>
       </div>
 
       <!-- QUIZ CARD -->
@@ -135,6 +122,7 @@
         <div class="quiz-options" id="quiz-options"></div>
         <div class="quiz-result" id="quiz-result"></div>
         <div class="quiz-actions">
+          <button class="quiz-next quiz-view" id="quiz-view" type="button" hidden>اعرض الحجر</button>
           <button class="quiz-next" id="quiz-next">
             <span>سؤال آخر</span>
             <span style="font-size:0.9rem">›</span>
@@ -205,18 +193,24 @@
     <div id="info-toggle" role="button" tabindex="0" aria-label="إظهار/إخفاء المعلومات" aria-expanded="true"><div class="chevron"></div></div>
     <div id="info-card">
       <div class="c-header">
-        <div class="c-emoji" id="c-emoji">💎</div>
+        <div class="c-emoji" id="c-emoji"></div>
         <div class="c-titles">
           <div class="c-en" id="c-en">—</div>
           <div class="c-ar" id="c-ar">—</div>
         </div>
+        <div class="c-actions" id="c-actions">
+          <button type="button" class="c-act" id="c-fav" aria-pressed="false" aria-label="أضف إلى المفضلة" title="المفضلة">
+            <svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></button>
+          <button type="button" class="c-act" id="c-cmp" aria-label="قارن مع حجر آخر" title="قارن">
+            <svg viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg></button>
+          <button type="button" class="c-act" id="c-share" aria-label="شارك رابط الحجر" title="شارك">
+            <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8.2 11 15.8 7M8.2 13l7.6 4"/></svg></button>
+        </div>
       </div>
+      <div class="c-badges" id="c-badges"></div>
       <p class="c-desc" id="c-desc"></p>
-      <div class="c-stats" id="c-stats">
-        <div class="stat"><div class="s-lbl">صلابة موس</div><div class="s-val" id="s-hard">—</div></div>
-        <div class="stat"><div class="s-lbl">الكثافة</div><div class="s-val" id="s-dens">—</div></div>
-        <div class="stat"><div class="s-lbl">المنشأ</div><div class="s-val" id="s-orig">—</div></div>
-      </div>
+      <div class="c-stats" id="c-stats"></div>
+      <div class="c-similar" id="c-similar"></div>
     </div>
   </div>
 
@@ -224,9 +218,35 @@
   <div id="gem-menu">
     <div class="cat-scroll" id="cat-scroll" role="toolbar" aria-label="التصنيفات"></div>
     <div class="menu-scroll" id="menu-scroll"></div>
+    <div class="menu-empty" id="menu-empty" hidden>لم تضف أحجاراً إلى المفضلة بعد — اضغط ☆ في بطاقة أي حجر.</div>
   </div>
 </div>
 
+
+<!-- COMPARE -->
+<div id="cmp-panel" class="sheet" role="dialog" aria-modal="true" aria-labelledby="cmp-title">
+  <div class="id-inner">
+    <div class="id-head">
+      <div><div class="id-title" id="cmp-title">مقارنة حجرين</div></div>
+      <button class="ar-card-close id-close" id="cmp-close" type="button" aria-label="إغلاق">×</button>
+    </div>
+    <div class="cmp-heads"><div id="cmp-a"></div><span class="cmp-vs">مقابل</span><div id="cmp-b"></div></div>
+    <section class="id-step" id="cmp-pick">
+      <input type="search" class="mp-search cmp-search" id="cmp-search" placeholder="ابحث عن حجر للمقارنة…" autocomplete="off" aria-label="ابحث عن حجر للمقارنة">
+      <div class="sim-row" id="cmp-results"></div>
+      <div class="c-sec-t">اقتراحات</div>
+      <div class="sim-row" id="cmp-sugg"></div>
+    </section>
+    <div id="cmp-body" hidden>
+      <div class="cmp-table" id="cmp-table"></div>
+      <ul class="cmp-verdict" id="cmp-verdict"></ul>
+      <div class="cmp-actions">
+        <button type="button" class="btn" id="cmp-show-b">اعرض الحجر الثاني</button>
+        <button type="button" class="btn btn-multi" id="cmp-merge">اعرضهما معاً</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- IDENTIFY BY PHOTO (experimental) -->
 <div id="id-panel" role="dialog" aria-modal="true" aria-labelledby="id-title">

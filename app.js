@@ -4,6 +4,8 @@
 
 import { GEMS, CATEGORIES, gemIcon, normAr } from './gems.js';
 import { initIdentify } from './identify.js';
+import { statsHTML, badgesHTML, similarHTML, mohsOf } from './cards.js';
+import { initCompare, openCompare } from './compare.js';
 const gemById=(id)=>GEMS.find(g=>g.id===id);
 const modelURL=(id)=>`models/${id}.glb`;
 
@@ -75,6 +77,13 @@ const genericHotspots=['hotspot-info','hotspot-cycle','hotspot-glow']
   .map(s=>document.querySelector(`[slot="${s}"]`));
 const [hsInfo,hsCycle,hsGlow]=genericHotspots;
 
+/* model-viewer's inner container can be scrolled sideways when a button inside it
+   gets focus, which pushes the AR cards off-screen — keep it pinned. */
+customElements.whenDefined('model-viewer').then(()=>{
+  const box=mv.shadowRoot?.querySelector('.container');
+  box?.addEventListener('scroll',()=>{ if(box.scrollLeft||box.scrollTop){ box.scrollLeft=0; box.scrollTop=0; } });
+});
+
 /* ── STATE ── */
 let activeIdx=0, modelLoaded=false;
 let mode='single';          // 'single' | 'merged'
@@ -100,7 +109,13 @@ function showStatus(msg){statusBadge.textContent=msg;statusBadge.classList.add('
 
 /* ── BUILD MENUS ── */
 let activeCat='all';
-const inCat=(gem)=>activeCat==='all'||gem.cat===activeCat;
+/* ── favourites (kept on this device only) ── */
+const FAV_KEY='gems-ar-favs-v1';
+let favs=new Set();
+try{ favs=new Set(JSON.parse(localStorage.getItem(FAV_KEY)||'[]')); }catch{}
+const saveFavs=()=>{ try{ localStorage.setItem(FAV_KEY,JSON.stringify([...favs])); }catch{} };
+
+const inCat=(gem)=>activeCat==='all'||(activeCat==='fav'?favs.has(gem.id):gem.cat===activeCat);
 const catLabel=(id)=>CATEGORIES.find(c=>c.id===id)?.label||'';
 
 function buildMenu(){
@@ -114,6 +129,11 @@ function buildMenu(){
     b.addEventListener('click',()=>setCategory(cat.id));
     cats.appendChild(b);
   });
+  const fb=document.createElement('button');
+  fb.type='button'; fb.className='cat-pill cat-fav'; fb.dataset.cat='fav'; fb.setAttribute('aria-pressed','false');
+  fb.innerHTML='★ المفضلة<span class="cat-n" id="fav-n">0</span>';
+  fb.addEventListener('click',()=>setCategory('fav'));
+  cats.appendChild(fb);
   const s=$('menu-scroll');
   GEMS.forEach((gem,i)=>{
     const c=document.createElement('button');
@@ -122,14 +142,29 @@ function buildMenu(){
     c.dataset.cat=gem.cat;
     c.setAttribute('aria-label',gem.nameAR);
     c.style.setProperty('--chip-color',gem.color);
-    c.innerHTML=`<span class="chip-em">${gemIcon(gem)}</span><span class="chip-lbl">${gem.nameEN}</span><span class="chip-dot"></span>`;
+    c.dataset.id=gem.id;
+    c.innerHTML=`<span class="chip-em">${gemIcon(gem)}</span><span class="chip-lbl">${gem.nameEN}</span><span class="chip-dot"></span><span class="chip-fav" aria-hidden="true">★</span>`;
     c.addEventListener('click',()=>selectGem(i));
     s.appendChild(c);
   });
 }
 
 function applyMenuFilter(){
-  document.querySelectorAll('.gem-chip').forEach((c,i)=>{c.hidden=!inCat(GEMS[i])});
+  let shown=0;
+  document.querySelectorAll('.gem-chip').forEach((c,i)=>{
+    const on=inCat(GEMS[i]); c.hidden=!on; shown+=on;
+    c.classList.toggle('is-fav',favs.has(GEMS[i].id));
+  });
+  $('menu-empty').hidden=shown>0;
+  $('fav-n').textContent=favs.size;
+}
+
+function toggleFav(gem){
+  if(favs.has(gem.id)){ favs.delete(gem.id); toast('أُزيل من المفضلة'); }
+  else { favs.add(gem.id); toast('★ أُضيف إلى المفضلة','ok'); }
+  saveFavs();
+  $('c-fav').setAttribute('aria-pressed',String(favs.has(gem.id)));
+  applyMenuFilter();
 }
 
 /* ── SEARCH BAR ──
@@ -217,7 +252,8 @@ function setCategory(id,{jump=true}={}){
   if(!jump) return;
   $('menu-scroll').scrollTo({left:0,behavior:'smooth'});
   // jump to the first gem of the category unless the current one already belongs to it
-  if(mode!=='single'||!inCat(GEMS[activeIdx])) selectGem(GEMS.findIndex(inCat));
+  const first=GEMS.findIndex(inCat);
+  if(first>=0&&(mode!=='single'||!inCat(GEMS[activeIdx]))) selectGem(first);
 }
 
 function buildMultiGrid(){
@@ -281,14 +317,43 @@ function fillInfoPanel(gem){
   const em=$('c-emoji');
   em.innerHTML=gemIcon(gem); em.style.background=gem.color+'22'; em.style.boxShadow=`0 0 18px ${gem.color}44`;
   $('c-en').textContent=gem.nameEN;
-  $('c-ar').textContent=`${gem.nameAR} • ${catLabel(gem.cat)}`;
+  $('c-ar').textContent=gem.nameAR;
+  $('c-badges').innerHTML=badgesHTML(gem);
   $('c-desc').textContent=gem.desc;
-  $('s-hard').textContent=gem.hardness; $('s-hard').style.color=gem.color;
-  $('s-dens').textContent=gem.density;
-  $('s-orig').textContent=gem.origin;
-  $('c-stats').hidden=false;
+  $('c-stats').innerHTML=statsHTML(gem);
+  $('c-similar').innerHTML=similarHTML(gem);
+  $('c-fav').setAttribute('aria-pressed',String(favs.has(gem.id)));
+  ['c-stats','c-similar','c-badges','c-actions'].forEach(id=>$(id).hidden=false);
   $('info-card').style.borderTopColor=gem.color+'50';
+  $('info-card').scrollTop=0;
 }
+$('c-similar').addEventListener('click',(e)=>{
+  const b=e.target.closest('.sim'); if(b) showGemById(b.dataset.id);
+});
+$('c-fav').addEventListener('click',()=>{ if(mode==='single') toggleFav(GEMS[activeIdx]); });
+$('c-cmp').addEventListener('click',()=>{ if(mode==='single') openCompare(GEMS[activeIdx]); });
+$('c-share').addEventListener('click',()=>shareGem(GEMS[activeIdx]));
+
+/* ── share & deep links: index.html#ruby opens the ruby ── */
+const gemURL=(gem)=>location.href.split('#')[0]+'#'+gem.id;
+async function shareGem(gem){
+  const url=gemURL(gem), text=`${gem.nameAR} (${gem.nameEN}) — ${gem.desc}`;
+  try{
+    if(navigator.share){ await navigator.share({title:`${gem.nameAR} — GEMS AR`,text,url}); return; }
+    await navigator.clipboard.writeText(url); toast('✓ نُسخ رابط الحجر','ok');
+  }catch(err){
+    if(err?.name!=='AbortError') toast('تعذّرت المشاركة — انسخ الرابط من شريط العنوان','err');
+  }
+}
+function showGemById(id){
+  const i=GEMS.findIndex(g=>g.id===id); if(i<0) return;
+  if(!inCat(GEMS[i])) setCategory('all',{jump:false});
+  selectGem(i);
+}
+window.addEventListener('hashchange',()=>{
+  const id=decodeURIComponent(location.hash.slice(1));
+  if(id&&(mode!=='single'||GEMS[activeIdx]?.id!==id)) showGemById(id);
+});
 
 function setFloatLabel(en,ar,color){
   flEN.textContent=en; flEN.style.color=color;
@@ -318,6 +383,7 @@ function selectGem(idx){
   setLoading(gem.nameAR,10);
   setFloatLabel(gem.nameEN,gem.nameAR,gem.color);
   fillInfoPanel(gem);
+  try{ history.replaceState(null,'','#'+gem.id); }catch{}
   mv.setAttribute('ar-modes',AR_MODES_SINGLE);
   mv.autoRotate=true;
   mv.src=modelURL(gem.id);
@@ -347,9 +413,7 @@ function showInfoCard(gem){
   $('ar-info-en').textContent=gem.nameEN; $('ar-info-en').style.color=gem.color;
   $('ar-info-ar').textContent=gem.nameAR;
   $('ar-info-desc').textContent=gem.desc; $('ar-info-desc').style.borderRightColor=gem.color;
-  $('ar-info-hard').textContent=gem.hardness; $('ar-info-hard').style.color=gem.color;
-  $('ar-info-dens').textContent=gem.density;
-  $('ar-info-orig').textContent=gem.origin;
+  $('ar-info-stats').innerHTML=statsHTML(gem,{compact:true});
   arInfoCard.style.borderColor=gem.color;
   arInfoCard.style.boxShadow=`0 12px 60px rgba(0,0,0,0.75), 0 0 36px ${gem.color}55`;
   arInfoCard.classList.add('show');
@@ -362,7 +426,8 @@ function actGlow(){ flashGlow(currentGem()?.color||'#D4AF37'); }
 function actStep(dir){
   if(mode==='merged') focusMerged(mergedIdx+dir);
   else {
-    const list=GEMS.map((g,i)=>i).filter(i=>inCat(GEMS[i]));
+    let list=GEMS.map((g,i)=>i).filter(i=>inCat(GEMS[i]));
+    if(!list.length) list=GEMS.map((g,i)=>i);
     const at=Math.max(0,list.indexOf(activeIdx));
     selectGem(list[(at+dir+list.length)%list.length]);
   }
@@ -415,13 +480,19 @@ mv.addEventListener('ar-status',(e)=>{
   if(st==='failed'){toast('⚠️ فشل AR','err'); arEnded()}
 });
 
-/* ── QUIZ ── */
+/* ── QUIZ ──
+   Three kinds of question, picked at random:
+   • name   — identify a gem from its properties
+   • harder — which of four gems is hardest (Mohs)
+   • cat    — which category a gem belongs to                     */
+const BEST_KEY='gems-ar-quiz-best';
 let quizCurrent=null, quizLastId=null;
-let quizScore={right:0,total:0};
+let quizScore={right:0,total:0,streak:0};
+let quizBest=0; try{ quizBest=+localStorage.getItem(BEST_KEY)||0; }catch{}
 
 function openQuiz(){
   arInfoCard.classList.remove('show');
-  quizScore={right:0,total:0};
+  quizScore={right:0,total:0,streak:0};
   newQuizQuestion();
   quizCard.classList.add('show');
 }
@@ -436,71 +507,107 @@ function shuffle(arr){
   }
   return a;
 }
+const pickGem=()=>{ const pool=GEMS.filter(g=>g.id!==quizLastId); const g=pool[Math.floor(Math.random()*pool.length)]; quizLastId=g.id; return g; };
+
+function qName(){
+  const correct=pickGem();
+  const opts=shuffle([correct,...shuffle(GEMS.filter(g=>g.id!==correct.id)).slice(0,3)]);
+  return {
+    // a neutral symbol tinted with the gem colour — its icon would give the answer away
+    html:`<span class="quiz-em" style="color:${correct.color}" aria-hidden="true">◆</span>
+      <div>ما اسم هذا الحجر؟</div>
+      <div class="quiz-clue">صلابة <bdi dir="ltr">${correct.hardness}</bdi> • كثافة <bdi dir="ltr">${correct.density}</bdi><br>المنشأ: ${correct.origin}</div>`,
+    options:opts.map(g=>({id:g.id,label:g.nameAR})),
+    correct:correct.id, color:correct.color, answer:correct.nameAR, gem:correct,
+  };
+}
+function qHarder(){
+  // four gems whose hardest one is clearly (≥0.5) harder than the rest
+  for(let tries=0;tries<200;tries++){
+    const four=shuffle(GEMS).slice(0,4);
+    const m=four.map(mohsOf), sorted=[...m].sort((a,b)=>b-a);
+    if(sorted[0]-sorted[1]<0.5) continue;
+    const best=four[m.indexOf(sorted[0])];
+    return {
+      html:`<span class="quiz-em" aria-hidden="true">⚒️</span><div>أيّ هذه الأحجار أصلب؟</div>
+        <div class="quiz-clue">الأصلب يستطيع أن يخدش الأطرى منه</div>`,
+      options:four.map(g=>({id:g.id,label:g.nameAR,after:g.hardness})),
+      correct:best.id, color:best.color, answer:`${best.nameAR} (\u2066${best.hardness}\u2069)`, gem:best,
+    };
+  }
+  return qName();
+}
+function qCat(){
+  const gem=pickGem();
+  const cats=CATEGORIES.filter(c=>c.id!=='all');
+  const opts=shuffle([cats.find(c=>c.id===gem.cat),...shuffle(cats.filter(c=>c.id!==gem.cat)).slice(0,3)]);
+  return {
+    html:`<span class="quiz-em" aria-hidden="true">${gemIcon(gem)}</span>
+      <div>إلى أي تصنيف ينتمي <b>${gem.nameAR}</b>؟</div>`,
+    options:opts.map(c=>({id:c.id,label:c.label})),
+    correct:gem.cat, color:gem.color, answer:catLabel(gem.cat), gem,
+  };
+}
 
 function newQuizQuestion(){
-  // never ask about the same gem twice in a row
-  const pool=GEMS.filter(g=>g.id!==quizLastId);
-  const correct=pool[Math.floor(Math.random()*pool.length)];
-  quizLastId=correct.id;
-  const distractors=shuffle(GEMS.filter(g=>g.id!==correct.id)).slice(0,3);
-  const all=shuffle([correct,...distractors]);
-  quizCurrent={correct,options:all};
-
-  // A neutral symbol tinted with the gem colour — the emoji itself would give the answer away.
-  $('quiz-question').innerHTML=`
-    <span class="quiz-em" style="color:${correct.color}" aria-hidden="true">◆</span>
-    <div>ما اسم هذا الحجر؟</div>
-    <div class="quiz-clue">صلابة ${correct.hardness} • كثافة ${correct.density}<br>المنشأ: ${correct.origin}</div>
-  `;
-
+  const r=Math.random();
+  quizCurrent = r<0.5 ? qName() : r<0.8 ? qHarder() : qCat();
+  $('quiz-question').innerHTML=quizCurrent.html;
   const optsEl=$('quiz-options');
   optsEl.innerHTML='';
-  all.forEach(gem=>{
+  quizCurrent.options.forEach(o=>{
     const btn=document.createElement('button');
     btn.type='button';
     btn.className='quiz-opt';
-    btn.textContent=gem.nameAR;
-    btn.dataset.id=gem.id;
-    btn.addEventListener('click',()=>submitAnswer(gem.id));
+    btn.textContent=o.label;
+    btn.dataset.id=o.id;
+    btn.addEventListener('click',()=>submitAnswer(o.id));
     optsEl.appendChild(btn);
   });
-
-  const r=$('quiz-result');
-  r.textContent=''; r.className='quiz-result';
+  const res=$('quiz-result');
+  res.textContent=''; res.className='quiz-result';
   $('quiz-next').classList.remove('show');
+  $('quiz-view').hidden=true;
   updateQuizScore();
 }
 
 function submitAnswer(id){
   if(!quizCurrent) return;
-  const optBtns=document.querySelectorAll('.quiz-opt');
-  if([...optBtns].some(b=>b.disabled)) return;
-
+  const optBtns=[...document.querySelectorAll('.quiz-opt')];
+  if(optBtns.some(b=>b.disabled)) return;
+  const q=quizCurrent, ok=id===q.correct;
   quizScore.total++;
-  const correct=quizCurrent.correct;
   optBtns.forEach(b=>{
     b.disabled=true;
-    if(b.dataset.id===correct.id) b.classList.add('correct');
-    if(b.dataset.id===id && id!==correct.id) b.classList.add('wrong');
+    const o=q.options.find(x=>x.id===b.dataset.id);
+    if(o?.after){ const s=document.createElement('small'); s.dir='ltr'; s.textContent=o.after; b.appendChild(s); }
+    if(b.dataset.id===q.correct) b.classList.add('correct');
+    if(b.dataset.id===id && !ok) b.classList.add('wrong');
   });
-
-  const r=$('quiz-result');
-  if(id===correct.id){
-    quizScore.right++;
-    r.textContent=`✓ أحسنت! إجابة صحيحة — ${correct.nameAR}`;
-    r.className='quiz-result ok';
-    flashGlow(correct.color);
+  const res=$('quiz-result');
+  if(ok){
+    quizScore.right++; quizScore.streak++;
+    if(quizScore.streak>quizBest){ quizBest=quizScore.streak; try{ localStorage.setItem(BEST_KEY,String(quizBest)); }catch{} }
+    res.textContent=`✓ أحسنت! ${q.answer}`;
+    res.className='quiz-result ok';
+    flashGlow(q.color);
   } else {
-    r.textContent=`✗ خطأ — الإجابة الصحيحة: ${correct.nameAR}`;
-    r.className='quiz-result err';
+    quizScore.streak=0;
+    res.textContent=`✗ الإجابة الصحيحة: ${q.answer}`;
+    res.className='quiz-result err';
   }
   $('quiz-next').classList.add('show');
+  $('quiz-view').hidden=mode!=='single'||!q.gem||GEMS[activeIdx]?.id===q.gem.id;
   updateQuizScore();
 }
 
 function updateQuizScore(){
-  $('quiz-score').innerHTML=`النتيجة: <b>${quizScore.right} / ${quizScore.total}</b>`;
+  $('quiz-score').innerHTML=
+    `النتيجة: <b>${quizScore.right} / ${quizScore.total}</b>`+
+    ` • متتالية: <b>${quizScore.streak}</b>${quizScore.streak>=3?' 🔥':''}`+
+    ` • أفضل: <b>${quizBest}</b>`;
 }
+$('quiz-view').addEventListener('click',()=>{ const g=quizCurrent?.gem; if(g){ const keep=quizCard.classList.contains('show'); showGemById(g.id); if(keep) quizCard.classList.add('show'); $('quiz-view').hidden=true; } });
 $('quiz-next').addEventListener('click',newQuizQuestion);
 
 /* ── ENTER AR ── */
@@ -526,6 +633,9 @@ function toggleMultiSelect(id){
   if(multiSelected.has(id)) multiSelected.delete(id);
   else if(multiSelected.size<4) multiSelected.add(id);
   else{toast('⚠️ 4 أحجار كحد أقصى','err');return}
+  refreshMultiChips();
+}
+function refreshMultiChips(){
   document.querySelectorAll('.mp-chip').forEach(c=>{
     const on=multiSelected.has(c.id.replace('mp-',''));
     c.classList.toggle('selected',on);
@@ -571,7 +681,7 @@ async function launchMultiAR(){
     $('c-en').textContent='MULTI SCENE';
     $('c-ar').textContent=namesAR;
     $('c-desc').textContent='مشهد مدموج — اضغط أيقونة أي حجر لعرض تفاصيله، أو استخدم أزرار التنقل داخل AR.';
-    $('c-stats').hidden=true;
+    ['c-stats','c-similar','c-badges','c-actions'].forEach(id=>$(id).hidden=true);
 
     setLoading('تجهيز المشهد المدموج…',40);
     mergeSub.textContent='✓ تم الدمج — جارٍ التحميل…';
@@ -634,4 +744,12 @@ $('gem-count').textContent=`${GEMS.length} حجر`;
 buildMenu();
 buildMultiGrid();
 initIdentify({showGem:(i)=>{ if(!inCat(GEMS[i])) setCategory('all',{jump:false}); selectGem(i); }});
-selectGem(0);
+initCompare({
+  showGem:(i)=>{ if(!inCat(GEMS[i])) setCategory('all',{jump:false}); selectGem(i); },
+  mergeTwo:(ids)=>{ multiSelected.clear(); ids.forEach(id=>multiSelected.add(id)); refreshMultiChips(); launchMultiAR(); },
+});
+applyMenuFilter();
+{ // open the gem named in the link, e.g. index.html#emerald
+  const start=GEMS.findIndex(g=>g.id===decodeURIComponent(location.hash.slice(1)));
+  if(start>=0) showGemById(GEMS[start].id); else selectGem(0);
+}
